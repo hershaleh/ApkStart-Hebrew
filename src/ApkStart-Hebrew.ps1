@@ -125,6 +125,13 @@ function Apply {
                 # Only source-reviewed literal UI strings are eligible for replacement.
                 $fileKeys=@($appAllow | Where-Object { $translations.ContainsKey([string]$_) })
             }
+            if($name -in @('manual.html','manual.js')){
+                # The manual contains technical examples and executable-looking strings.
+                # Translate only reviewed, user-facing manual phrases.
+                $manualAllowPath=Join-Path $root 'translations/manual-allowlist.json'
+                $manualAllow=@(Get-Content -LiteralPath $manualAllowPath -Raw -Encoding UTF8 | ConvertFrom-Json)
+                $fileKeys=@($manualAllow | Where-Object { $translations.ContainsKey([string]$_) })
+            }
             if($name -eq 'main.js'){
                 # Main process contains internal protocol/configuration strings too.
                 # Only replace reviewed, user-visible menu/dialog phrases here.
