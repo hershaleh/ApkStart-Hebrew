@@ -90,6 +90,29 @@ input[type=url],input[type=number],input[type=password],code,pre,.mono,.ltr,[dir
 '@
     return $text+$css
 }
+function RtlManual([string]$html) {
+    if($html.Contains('APKSTART-HEBREW:MANUAL-RTL')){return $html}
+    $css=@'
+/* APKSTART-HEBREW:MANUAL-RTL */
+html[lang],body{direction:rtl;text-align:right}
+.wrap{flex-direction:row-reverse}
+aside{border-right:0;border-left:1px solid var(--line);text-align:right}
+aside h2,.toc-l2,.toc-l3,#tocList a{text-align:right}
+#tocSearch{direction:rtl;text-align:right}
+main{text-align:right}
+h1,h2,h3,h4,p,li,blockquote,td,th{text-align:right}
+ul,ol{padding-left:0;padding-right:26px}
+blockquote{border-left:0;border-right:4px solid var(--warn);border-radius:8px 0 0 8px}
+th,td{text-align:right}
+.btnbar{right:auto;left:22px;direction:rtl}
+code,pre,.ltr,[dir=ltr],a[href^="http"],a[href^="file:"]{
+  direction:ltr;text-align:left;unicode-bidi:plaintext
+}
+pre{overflow-x:auto}
+'@
+    if($html -notmatch '(?i)</style>'){return $html}
+    return [regex]::Replace($html,'(?i)</style>',($css+[Environment]::NewLine+'</style>'),1)
+}
 function Apply {
     if (Get-Process -Name 'ApkStart' -ErrorAction SilentlyContinue) { Log 'ApkStart עדיין פועל. סגור אותו לפני החלת התרגום.' 'warning'; return }
     $target=Scan
@@ -131,6 +154,7 @@ function Apply {
                 $manualAllow=@(Get-Content -LiteralPath $manualAllowPath -Raw -Encoding UTF8 | ConvertFrom-Json)
                 $fileKeys=@($manualAllow | Where-Object { $translations.ContainsKey([string]$_) })
             }
+            if($name -eq 'manual.html'){$updated=RtlManual $updated}
             if($name -eq 'main.js'){
                 # Main process contains internal protocol/configuration strings too.
                 # Only replace reviewed, user-visible menu/dialog phrases here.
