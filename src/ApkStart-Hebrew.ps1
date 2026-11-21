@@ -132,15 +132,31 @@ function Apply {
                 $fileKeys=@($mainAllow | Where-Object { $translations.ContainsKey($_) })
             }
             foreach($key in $fileKeys){if($updated.Contains($key)){$count+=([regex]::Matches($updated,[regex]::Escape($key))).Count;$updated=$updated.Replace($key,$translations[$key])}}
-            if($name -in @('style.css','theme.css','shell.css')){$updated=Rtl $updated}
+            if($name -in @('style.css','theme.css','shell.css','splash.css')){$updated=Rtl $updated}
             if($updated -ne $original){
                 $relative=$file.Substring($target.Root.TrimEnd('\').Length).TrimStart('\','/')
                 $backupPath=Join-Path $backupFiles $relative
                 New-Item -ItemType Directory -Path (Split-Path -Parent $backupPath) -Force | Out-Null
                 [IO.File]::WriteAllText($backupPath,$original,$utf8)
-                [IO.File]::WriteAllText($file,$updated,$utf8)
-                $manifest.Files+= [pscustomobject]@{RelativePath=$relative;BackupPath=$backupPath;PatchedHash=(HashFile $file)}
-                $manifest.Replacements+=$count;$changed++
+                # Write beside the target and move into place so a failed write cannot leave a
+                # partially translated source file. Keep the original backup until commit.
+                $tempPath=$file+'.apkstart-hebrew.tmp'
+                try {
+                    [IO.File]::WriteAllText($tempPath,$updated,$utf8)
+                    if(Test-Path -LiteralPath $file){
+                        [IO.File]::Replace($tempPath,$file,$null,$true)
+                    } else {
+                        [IO.File]::Move($tempPath,$file)
+                    }
+                    $patchedHash=HashFile $file
+                    $manifest.Files+= [pscustomobject]@{RelativePath=$relative;BackupPath=$backupPath;PatchedHash=$patchedHash}
+                    $manifest.Replacements+=$count;$changed++
+                } catch {
+                    if(Test-Path -LiteralPath $backupPath){Copy-Item -LiteralPath $backupPath -Destination $file -Force}
+                    throw
+                } finally {
+                    if(Test-Path -LiteralPath $tempPath){Remove-Item -LiteralPath $tempPath -Force -ErrorAction SilentlyContinue}
+                }
             }
         }
         if($changed -eq 0){throw 'לא נמצאו מחרוזות מתאימות. לא בוצע שינוי.'}
