@@ -56,7 +56,7 @@ foreach ($key in $manualAllow) {
         throw "Manual allowlist key is missing from dictionary: $key"
     }
 }
-if ($source -notmatch "manual\.html" -or $source -notmatch "manual-allowlist\.json" -or $source -match "\$files\.Add\(\$coreManual\)") {
+if ($source -notmatch "manual\.html" -or $source -notmatch "manual-allowlist\.json" -or $source.Contains('$files.Add($coreManual)')) {
     throw 'Manual translation must use its dedicated reviewed allowlist.'
 }
 
