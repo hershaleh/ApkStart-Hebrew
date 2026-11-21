@@ -36,6 +36,10 @@ foreach ($key in @('仍失败请把安装包路径换成纯英文短路径（如
     if ($null -eq $translations.PSObject.Properties[$key]) { throw "Installer/recovery translation missing: $key" }
     if ($null -eq @($appAllow | Where-Object { $_ -ceq $key })[0]) { throw "Installer/recovery phrase is not allowlisted: $key" }
 }
+foreach ($key in @('没有发现影响使用的问题。运行时、adb 授权、磁盘、数据分区、快照与设置冲突都检查过了。','上次检测',' · 一切正常',' 项待处理',' 项命中','处理','教程','一键修复全部',' 个严重',' 项待修复',' 项提示','建议改到纯英文目录','在 设置 → 系统集成 里修改「运行时数据目录」，再重启软件。')) {
+    if ($null -eq $translations.PSObject.Properties[$key]) { throw "Diagnostic UI translation missing: $key" }
+    if ($null -eq @($appAllow | Where-Object { $_ -ceq $key })[0]) { throw "Diagnostic UI phrase is not allowlisted: $key" }
+}
 foreach ($key in @('正在运行','停止运行时',' · 已是精简状态')) {
     if ($null -eq $translations.PSObject.Properties[$key]) { throw "Dynamic card/runtime translation missing: $key" }
     if ($null -eq @($appAllow | Where-Object { $_ -ceq $key })[0]) { throw "Dynamic card/runtime string is not allowlisted: $key" }
