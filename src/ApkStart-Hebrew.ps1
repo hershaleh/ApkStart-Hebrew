@@ -58,6 +58,65 @@ function Rtl([string]$text) {
     $css=@'
 
 /* APKSTART-HEBREW:RTL */
+/* Settings, menus and dialogs: preserve the visual hierarchy while mirroring
+   only layout containers. Do not reverse every flex row globally. */
+.modal-main{direction:rtl}
+.set-nav{order:0;text-align:right}
+.set-content{direction:rtl;text-align:right}
+.set-nav-item{justify-content:flex-start;text-align:right}
+.set-nav-item .icon,.set-nav-item svg{flex:0 0 auto}
+.group,.advanced-group,.field,.about-box,.lab-notice{direction:rtl;text-align:right}
+.field.two{direction:rtl}
+.field.two>*,.field .row>*{min-width:0}
+.field .row,.runtime-actions,.about-links,.about-qrs{direction:rtl}
+.field .row,.runtime-actions{flex-wrap:wrap}
+.field label,.field .sub,.field .note,.field .inline-note,
+.group-title,.advanced-group>summary,.modal-head,.modal-foot,
+.welcome-body,.welcome-actions,.welcome-tip,.welcome-opt{text-align:right}
+.field input:not([type=url]):not([type=password]):not([type=number]):not([type=range]):not([type=checkbox]):not([type=radio]),
+.field select,.field textarea{direction:rtl;text-align:right}
+.field input[type=checkbox],.field input[type=radio],.switch{flex:0 0 auto}
+.switch-field{direction:rtl;justify-content:space-between}
+.switch-field>div{min-width:0;text-align:right}
+.modal-head{direction:rtl}
+.modal-head .icon-btn{margin-right:auto;margin-left:0}
+.modal-foot{direction:rtl;justify-content:flex-start}
+.modal-foot .btn{margin-right:0;margin-left:0}
+.ctxmenu{direction:rtl;text-align:right}
+.ctxmenu .item{direction:rtl;justify-content:flex-start;text-align:right}
+.ctxmenu .item .k{margin-right:auto;margin-left:0;direction:ltr}
+.toast-wrap{direction:rtl;align-items:flex-start}
+.toast,.toast .t-title,.toast .t-body{text-align:right;direction:rtl}
+.toast .t-title{flex-direction:row}
+.welcome,.welcome-hero,.welcome-body,.welcome-actions{direction:rtl}
+.welcome-tip{flex-direction:row}
+.welcome-tip i{flex:0 0 auto}
+.welcome-opt{flex-direction:row}
+.about-info,.about-name,.about-links{direction:rtl;text-align:right}
+.about-links{align-items:flex-start}
+.group-title{unicode-bidi:plaintext}
+.statusbar{direction:rtl}
+.status-left,.status-right{direction:rtl}
+.titlebar{direction:rtl}
+.titlebar-actions{direction:ltr}
+.toolbar{direction:rtl}
+.toolbar-right{margin-right:auto;margin-left:0}
+.search{direction:rtl}
+.search input,.set-search{text-align:right;direction:rtl}
+
+/* Technical values must remain readable and copyable in their natural order. */
+input[type=url],input[type=password],input[type=number],input[type=range],
+input[type=search][data-ltr],input[dir=ltr],textarea[dir=ltr],
+code,pre,kbd,samp,.mono,.monospace,.ltr,[dir=ltr],
+.path,.path-value,.file-path,.command,.terminal,.code,.url,.ip-address,
+input[id*="Path" i],input[id*="Dir" i],input[id*="Url" i],
+input[id*="Address" i],input[id*="Command" i],textarea[id*="Path" i],
+textarea[id*="Command" i]{
+  direction:ltr;text-align:left;unicode-bidi:plaintext
+}
+pre,code,.mono,.monospace,.terminal,.command{overflow-wrap:anywhere}
+input[type=number],input[type=range]{text-align:left}
+
 html[lang],body{direction:rtl}
 body{text-align:right}
 .titlebar,.toolbar,.modal-main,.statusbar,.modal-head,.modal-foot{direction:rtl}
