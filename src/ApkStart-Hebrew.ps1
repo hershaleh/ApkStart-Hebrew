@@ -113,7 +113,14 @@ function Apply {
             $original=[IO.File]::ReadAllText($file,[Text.Encoding]::UTF8)
             if($original.Contains('APKSTART-HEBREW')){throw ('נמצא תרגום קודם בקובץ '+$name+'. יש לשחזר לפני החלה חוזרת.')}
             $updated=$original;$count=0
-            foreach($key in $keys){if($updated.Contains($key)){$count+=([regex]::Matches($updated,[regex]::Escape($key))).Count;$updated=$updated.Replace($key,$translations[$key])}}
+            $fileKeys=$keys
+            if($name -eq 'main.js'){
+                # Main process contains internal protocol/configuration strings too.
+                # Only replace reviewed, user-visible menu/dialog phrases here.
+                $mainAllow=@('还没有安装应用','重建桌面/开始菜单快捷方式','同步共享目录','选择数据存放目录','选择要安装的 APK','Android 应用','选择驱动文件（.json）','驱动 JSON','导出本机驱动模板','确认清理运行时缓存','将释放约 ','自动检测发现新问题：','（设置 → 诊断与修复）','运行时已自动准备完成','正在完成上次未完成的更新…','正在替换程序并重启…','启动失败：')
+                $fileKeys=@($mainAllow | Where-Object { $translations.ContainsKey($_) })
+            }
+            foreach($key in $fileKeys){if($updated.Contains($key)){$count+=([regex]::Matches($updated,[regex]::Escape($key))).Count;$updated=$updated.Replace($key,$translations[$key])}}
             if($name -in @('style.css','theme.css','shell.css')){$updated=Rtl $updated}
             if($updated -ne $original){
                 $relative=$file.Substring($target.Root.TrimEnd('\').Length).TrimStart('\','/')
