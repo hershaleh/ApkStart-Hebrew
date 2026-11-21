@@ -11,16 +11,16 @@ foreach ($path in @($script, $dict, $launcher)) {
 }
 
 $translations = Get-Content -LiteralPath $dict -Raw -Encoding UTF8 | ConvertFrom-Json
-if (@($translations.PSObject.Properties | Where-Object { $_.MemberType -eq 'NoteProperty' }).Count -lt 40) {
+if (@($translations.PSObject.Properties | Where-Object { $_.MemberType -eq 'NoteProperty' }).Count -lt 250) {
     throw 'Translation dictionary unexpectedly small.'
 }
 $hebrewCount = @($translations.PSObject.Properties | Where-Object { $_.Value -match '[\u0590-\u05FF]' }).Count
-if ($hebrewCount -lt 35) {
+if ($hebrewCount -lt 200) {
     throw 'Hebrew translation entries are missing.'
 }
 
 $source = Get-Content -LiteralPath $script -Raw -Encoding UTF8
-foreach ($required in @('Get-FileHash','APKSTART-HEBREW:RTL','app.asar','WindowsApps','Backups','PatchedHash')) {
+foreach ($required in @('Get-FileHash','APKSTART-HEBREW:RTL','app.asar','WindowsApps','Backups','PatchedHash','set-nav','modal-head','toolbar-right','toast-wrap')) {
     if ($source -notmatch [regex]::Escape($required)) {
         throw "Safety or compatibility feature missing: $required"
     }
