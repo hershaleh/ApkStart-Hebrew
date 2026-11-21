@@ -84,3 +84,7 @@ if ($source -notmatch "'style\.css','theme\.css','shell\.css','splash\.css'") {
 if ($source -notmatch "src/core/manual\.js.*never patch it as text") {
     throw 'Executable manual routing code must remain excluded from text translation.'
 }
+
+if ($source -notmatch "function RtlManual" -or $source -notmatch "APKSTART-HEBREW:MANUAL-RTL" -or $source -notmatch "flex-direction:row-reverse" -or $source -notmatch "blockquote\{border-left:0;border-right") {
+    throw 'The built-in manual must receive its dedicated RTL layout.'
+}
