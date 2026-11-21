@@ -62,7 +62,7 @@ function Rtl([string]$text) {
    only layout containers. Do not reverse every flex row globally. */
 .modal-main{direction:rtl}
 .set-nav{order:0;text-align:right}
-.set-content{direction:rtl;text-align:right}
+.modal-body{direction:rtl;text-align:right}
 .set-nav-item{justify-content:flex-start;text-align:right}
 .set-nav-item .icon,.set-nav-item svg{flex:0 0 auto}
 .group,.advanced-group,.field,.about-box,.lab-notice{direction:rtl;text-align:right}
