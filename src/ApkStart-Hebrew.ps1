@@ -60,16 +60,33 @@ function Rtl([string]$text) {
 /* APKSTART-HEBREW:RTL */
 html[lang],body{direction:rtl}
 body{text-align:right}
-.titlebar,.toolbar,.modal-main,.statusbar{direction:rtl}
+.titlebar,.toolbar,.modal-main,.statusbar,.modal-head,.modal-foot{direction:rtl}
+.titlebar{padding-left:148px;padding-right:12px}
 .titlebar-actions{direction:ltr}
-.toolbar-right{margin-inline-start:auto}
+.brand,.toolbar,.toolbar-right,.status-left,.status-right{direction:rtl}
+.toolbar-right{margin-right:auto;margin-left:0}
 .search,.set-search-wrap{direction:rtl}
 .search input,.set-search{text-align:right;direction:rtl}
-.set-nav{border-right:0;border-left:1px solid var(--line,#e5e7eb)}
-.status-left,.status-right,.ctxmenu,.toast-wrap{direction:rtl}
-.ctxmenu{text-align:right}
-input[type="text"],input[type="search"],textarea{text-align:right}
-input[type="url"],input[type="number"],input[type="password"],code,pre,.mono,.ltr,[dir="ltr"]{direction:ltr;text-align:left;unicode-bidi:plaintext}
+.set-nav{border-right:0;border-left:1px solid var(--line)}
+.modal-head .icon-btn{margin-left:0;margin-right:auto}
+.modal-foot .btn{margin-left:0;margin-right:auto}
+.status-right{margin-left:0;margin-right:auto}
+.ctxmenu,.toast-wrap{direction:rtl;text-align:right}
+.toast-wrap{right:auto;left:16px}
+.ctxmenu .item{direction:rtl}
+.field label,.field .sub,.group-title,.note,.inline-note{text-align:right}
+.field input[type=text],.field input[type=number],.field select,.field textarea{text-align:right;direction:rtl}
+.field input[type=url],.field input[type=password],.field input[dir=ltr],
+input[type=url],input[type=number],input[type=password],code,pre,.mono,.ltr,[dir=ltr]{
+  direction:ltr;text-align:left;unicode-bidi:plaintext
+}
+.statusbar .status-left,.statusbar .status-right{flex-direction:row}
+.set-nav-item,.ctxmenu .item,.checkbox-inline,.switch-field{direction:rtl}
+.set-nav-item{ text-align:right }
+.modal-head{padding-left:18px;padding-right:14px}
+.modal-foot{justify-content:flex-start}
+.bar{direction:rtl}
+.name{direction:rtl;text-align:right}
 '@
     return $text+$css
 }
