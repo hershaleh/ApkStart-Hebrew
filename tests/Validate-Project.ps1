@@ -10,7 +10,22 @@ foreach ($path in @($script, $dict, $launcher)) {
     }
 }
 
-$null = Get-Content -LiteralPath $dict -Raw -Encoding UTF8 | ConvertFrom-Json
+$translations = Get-Content -LiteralPath $dict -Raw -Encoding UTF8 | ConvertFrom-Json
+if ($translations.PSObject.Properties.Count -lt 40) {
+    throw 'Translation dictionary unexpectedly small.'
+}
+$hebrewCount = @($translations.PSObject.Properties | Where-Object { $_.Value -match '[\u0590-\u05FF]' }).Count
+if ($hebrewCount -lt 35) {
+    throw 'Hebrew translation entries are missing.'
+}
+
+$source = Get-Content -LiteralPath $script -Raw -Encoding UTF8
+foreach ($required in @('Get-FileHash','APKSTART-HEBREW:RTL','app.asar','WindowsApps','Backups','PatchedHash')) {
+    if ($source -notmatch [regex]::Escape($required)) {
+        throw "Safety or compatibility feature missing: $required"
+    }
+}
+
 $tokens = $null
 $errors = $null
 [System.Management.Automation.Language.Parser]::ParseFile($script, [ref]$tokens, [ref]$errors) | Out-Null
@@ -19,4 +34,4 @@ if ($errors.Count -gt 0) {
     throw 'PowerShell syntax validation failed.'
 }
 
-Write-Host 'Project validation passed.' -ForegroundColor Green
+Write-Host ("Project validation passed. Hebrew entries: " + $hebrewCount) -ForegroundColor Green
