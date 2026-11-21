@@ -30,9 +30,9 @@ foreach ($key in $appAllow) { if ($null -eq $translations.PSObject.Properties[[s
 # Main settings surface: ensure the newly discovered visible labels are translated.
 foreach ($key in @('运行时与环境','运行状态','安卓系统设置（不用进安卓桌面）','桌面与应用','文件互通','系统集成','软件更新','关于','当前版本','尚未检查','adb 路径','设备地址','系统镜像（ISO）','内存 (MB，0 = 自动)','CPU 核心（0 = 自动）','空闲回收（分钟，0 = 不回收）','通用兼容镜像（自动管理）','兼容镜像','下载兼容镜像','启动运行时','停止内置虚拟机','媒体音量','字体大小','标准','特大','显示大小','紧凑（省性能）','宽松','安卓原生设置','显示设置','声音设置','语言设置','应用管理','安装后自动创建桌面快捷方式','同时添加到开始菜单','快捷方式目录','本机共享目录','浏览','保存并迁移','安卓内对应目录','关联 .apk 文件','卸载 ApkStart','一键卸载','设置修改后立即生效')) {
     if ($null -eq $translations.PSObject.Properties[$key]) { throw "Main settings translation missing: $key" }
-    if ($translations[$key] -notmatch '[\\u0590-\\u05FF]') { throw "Main settings phrase has no Hebrew translation: $key" }
+    if ($translations[$key] -notmatch '[\u0590-\u05FF]') { throw "Main settings phrase has no Hebrew translation: $key" }
 }
-foreach ($key in @('仍失败请把安装包路径换成纯英文短路径（如 D:\\\\a.apk）。','但应用内的登录态、追剧记录等会丢失')) {
+foreach ($key in @('仍失败请把安装包路径换成纯英文短路径（如 D:\\a.apk）。','但应用内的登录态、追剧记录等会丢失')) {
     if ($null -eq $translations.PSObject.Properties[$key]) { throw "Installer/recovery translation missing: $key" }
     if ($null -eq @($appAllow | Where-Object { $_ -ceq $key })[0]) { throw "Installer/recovery phrase is not allowlisted: $key" }
 }
