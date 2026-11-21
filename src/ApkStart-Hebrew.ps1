@@ -105,10 +105,14 @@ function Apply {
     $translations=@{};foreach($p in $map.PSObject.Properties){$translations[$p.Name]=[string]$p.Value}
     $keys=@($translations.Keys | Sort-Object { $_.Length } -Descending)
     $names=@('main.js','index.html','app.js','shell.html','shell.js','manual.html','splash.html','splash.js','style.css','theme.css','shell.css','splash.css')
+    $files=New-Object System.Collections.Generic.List[string]
+    foreach($name in $names){$files.Add((Join-Path $target.Ui $name))}
+    $coreManual=Join-Path $target.Root 'src/core/manual.js'
+    if(Test-Path -LiteralPath $coreManual){$files.Add($coreManual)}
     $changed=0
     try {
-        foreach($name in $names){
-            $file=Join-Path $target.Ui $name
+        foreach($file in $files){
+            $name=Split-Path -Leaf $file
             if(!(Test-Path $file)){continue}
             $original=[IO.File]::ReadAllText($file,[Text.Encoding]::UTF8)
             if($original.Contains('APKSTART-HEBREW')){throw ('נמצא תרגום קודם בקובץ '+$name+'. יש לשחזר לפני החלה חוזרת.')}
