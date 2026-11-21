@@ -4,8 +4,9 @@ $script = Join-Path $root 'src/ApkStart-Hebrew.ps1'
 $dict = Join-Path $root 'translations/he-IL.json'
 $launcher = Join-Path $root 'Run-ApkStart-Hebrew.cmd'
 $appAllowPath = Join-Path $root 'translations/app-js-allowlist.json'
+$manualAllowPath = Join-Path $root 'translations/manual-allowlist.json'
 
-foreach ($path in @($script, $dict, $launcher, $appAllowPath)) {
+foreach ($path in @($script, $dict, $launcher, $appAllowPath, $manualAllowPath)) {
     if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
         throw "Missing required project file: $path"
     }
@@ -45,6 +46,18 @@ if ($source -notmatch "splash\.html.*splash\.js.*splash\.css") {
 
 if ($source -notmatch "\$mainAllow=@\('还没有安装应用'.*'启动失败：'\)") {
     throw 'Main-process translations must remain restricted to the reviewed UI allowlist.'
+}
+
+
+$manualAllow = Get-Content -LiteralPath $manualAllowPath -Raw -Encoding UTF8 | ConvertFrom-Json
+if (@($manualAllow).Count -lt 80) { throw 'Reviewed manual allowlist unexpectedly small.' }
+foreach ($key in $manualAllow) {
+    if ($null -eq $translations.PSObject.Properties[[string]$key]) {
+        throw "Manual allowlist key is missing from dictionary: $key"
+    }
+}
+if ($source -notmatch "manual\.html','manual\.js'.*manual-allowlist\.json") {
+    throw 'Manual translation must use its dedicated reviewed allowlist.'
 }
 
 $tokens = $null
