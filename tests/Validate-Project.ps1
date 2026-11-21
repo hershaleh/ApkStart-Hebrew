@@ -3,8 +3,9 @@ $root = Split-Path -Parent $PSScriptRoot
 $script = Join-Path $root 'src/ApkStart-Hebrew.ps1'
 $dict = Join-Path $root 'translations/he-IL.json'
 $launcher = Join-Path $root 'Run-ApkStart-Hebrew.cmd'
+$appAllowPath = Join-Path $root 'translations/app-js-allowlist.json'
 
-foreach ($path in @($script, $dict, $launcher)) {
+foreach ($path in @($script, $dict, $launcher, $appAllowPath)) {
     if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
         throw "Missing required project file: $path"
     }
@@ -19,8 +20,11 @@ if ($hebrewCount -lt 200) {
     throw 'Hebrew translation entries are missing.'
 }
 
+$appAllow = Get-Content -LiteralPath $appAllowPath -Raw -Encoding UTF8 | ConvertFrom-Json
+if (@($appAllow).Count -lt 150) { throw 'Reviewed app.js allowlist unexpectedly small.' }
+foreach ($key in $appAllow) { if ($null -eq $translations.PSObject.Properties[[string]$key]) { throw "app.js allowlist key is missing from dictionary: $key" } }
 $source = Get-Content -LiteralPath $script -Raw -Encoding UTF8
-foreach ($required in @('Get-FileHash','APKSTART-HEBREW:RTL','app.asar','WindowsApps','Backups','PatchedHash','set-nav','modal-head','toolbar-right','toast-wrap','main.js','splash.html','splash.js','splash.css','src/core/manual.js')) {
+foreach ($required in @('Get-FileHash','APKSTART-HEBREW:RTL','app.asar','WindowsApps','Backups','PatchedHash','set-nav','modal-head','toolbar-right','toast-wrap','main.js','splash.html','splash.js','splash.css','src/core/manual.js','app-js-allowlist.json')) {
     if ($source -notmatch [regex]::Escape($required)) {
         throw "Safety or compatibility feature missing: $required"
     }
