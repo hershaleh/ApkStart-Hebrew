@@ -6,8 +6,9 @@ $launcher = Join-Path $root 'Run-ApkStart-Hebrew.cmd'
 $appAllowPath = Join-Path $root 'translations/app-js-allowlist.json'
 $manualAllowPath = Join-Path $root 'translations/manual-allowlist.json'
 $shellAllowPath = Join-Path $root 'translations/shell-ui-allowlist.json'
+$mainAllowPath = Join-Path $root 'translations/main-process-allowlist.json'
 
-foreach ($path in @($script, $dict, $launcher, $appAllowPath, $manualAllowPath, $shellAllowPath)) {
+foreach ($path in @($script, $dict, $launcher, $appAllowPath, $manualAllowPath, $shellAllowPath, $mainAllowPath)) {
     if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
         throw "Missing required project file: $path"
     }
@@ -45,8 +46,15 @@ if ($source -notmatch "splash\.html.*splash\.js.*splash\.css") {
     throw 'Startup splash files are not included in the patch target list.'
 }
 
-if ($source -notmatch "\$mainAllow=@\('还没有安装应用'.*'启动失败：'\)") {
-    throw 'Main-process translations must remain restricted to the reviewed UI allowlist.'
+$mainAllow = Get-Content -LiteralPath $mainAllowPath -Raw -Encoding UTF8 | ConvertFrom-Json
+if (@($mainAllow).Count -lt 20) { throw 'Reviewed main-process allowlist unexpectedly small.' }
+foreach ($key in $mainAllow) {
+    if ($null -eq $translations.PSObject.Properties[[string]$key]) {
+        throw "Main-process allowlist key is missing from dictionary: $key"
+    }
+}
+if ($source -notmatch 'main-process-allowlist\.json' -or $source -notmatch "\$name -eq 'main\.js'") {
+    throw 'Main-process translations must remain restricted to the dedicated reviewed allowlist.'
 }
 
 
