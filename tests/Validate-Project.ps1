@@ -73,6 +73,15 @@ if ($source -notmatch "manual\.html" -or $source -notmatch "manual-allowlist\.js
     throw 'Manual translation must use its dedicated reviewed allowlist.'
 }
 
+
+# Manual body coverage: verify real paragraph-level phrases, not only navigation labels.
+foreach ($key in @('本项目为早期版本，作者业余时间维护，开源免费、无广告。遇到问题是正常的，本手册就是为此准备的。','首次启动慢是正常的，属"一次性成本"。之后再用就是秒进。','模拟器要跑得快，需要 CPU 虚拟化加速。Windows 上只有两条路：','如果系统本身也没声音，先去解决 Windows 音频；只有 ApkStart 里的应用没声才按下面查。','按顺序排查')) {
+    if ($null -eq $translations.PSObject.Properties[$key]) { throw "Manual body translation missing: $key" }
+    if ($null -eq @($manualAllow | Where-Object { $_ -ceq $key })[0]) { throw "Manual body phrase is not allowlisted: $key" }
+    if ($translations[$key] -notmatch '[\u0590-\u05FF]') { throw "Manual body phrase has no Hebrew translation: $key" }
+}
+if (@($manualAllow).Count -lt 100) { throw 'Manual allowlist body coverage unexpectedly small.' }
+
 $tokens = $null
 $errors = $null
 [System.Management.Automation.Language.Parser]::ParseFile($script, [ref]$tokens, [ref]$errors) | Out-Null
