@@ -101,3 +101,7 @@ if ($source -notmatch "src/core/manual\.js.*never patch it as text") {
 if ($source -notmatch "function RtlManual" -or $source -notmatch "APKSTART-HEBREW:MANUAL-RTL" -or $source -notmatch "flex-direction:row-reverse" -or $source -notmatch "blockquote\{border-left:0;border-right") {
     throw 'The built-in manual must receive its dedicated RTL layout.'
 }
+
+if ($source -notmatch 'function RtlShell' -or $source -notmatch 'APKSTART-HEBREW:SHELL-RTL' -or $source -notmatch "\$name -eq 'shell\.css'") {
+    throw 'Standalone shell stylesheet must receive dedicated RTL alignment.'
+}
