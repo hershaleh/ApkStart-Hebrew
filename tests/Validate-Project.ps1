@@ -108,6 +108,39 @@ if ($errors.Count -gt 0) {
     throw 'PowerShell syntax validation failed.'
 }
 
+
+# RTL coverage for settings, context menus, dialogs and technical-value exceptions.
+foreach ($selector in @(
+    '/* Settings, menus and dialogs: preserve',
+    '.modal-main{direction:rtl}',
+    '.set-content{direction:rtl;text-align:right}',
+    '.set-nav-item{justify-content:flex-start;text-align:right}',
+    '.switch-field{direction:rtl;justify-content:space-between}',
+    '.ctxmenu .item{direction:rtl;justify-content:flex-start;text-align:right}',
+    '.modal-head{direction:rtl}',
+    '.modal-foot{direction:rtl}',
+    '.welcome-actions{direction:rtl}',
+    'input[type=url]',
+    'input[type=password]',
+    'input[type=number]',
+    'input[dir=ltr]',
+    'textarea[dir=ltr]',
+    'code,pre,kbd,samp',
+    '.terminal',
+    'input[id*="Path" i]',
+    'textarea[id*="Command" i]'
+)) {
+    if ($source -notmatch [regex]::Escape($selector)) {
+        throw "RTL selector or LTR exception missing: $selector"
+    }
+}
+if ($source -notmatch 'direction:ltr;text-align:left;unicode-bidi:plaintext') {
+    throw 'Technical fields must explicitly preserve LTR direction.'
+}
+if ($source -match '(?s)/\* Settings, menus and dialogs: preserve.*?\*\/.*?\*\s*\{\s*direction:\s*rtl') {
+    throw 'RTL rules must not apply direction globally to every element.'
+}
+
 Write-Host ("Project validation passed. Hebrew entries: " + $hebrewCount) -ForegroundColor Green
 
 # Translation writes must be staged beside the target and atomically committed.
