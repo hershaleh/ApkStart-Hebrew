@@ -36,6 +36,10 @@ foreach ($key in @('仍失败请把安装包路径换成纯英文短路径（如
     if ($null -eq $translations.PSObject.Properties[$key]) { throw "Installer/recovery translation missing: $key" }
     if ($null -eq @($appAllow | Where-Object { $_ -ceq $key })[0]) { throw "Installer/recovery phrase is not allowlisted: $key" }
 }
+foreach ($key in @('正在运行','停止运行时',' · 已是精简状态')) {
+    if ($null -eq $translations.PSObject.Properties[$key]) { throw "Dynamic card/runtime translation missing: $key" }
+    if ($null -eq @($appAllow | Where-Object { $_ -ceq $key })[0]) { throw "Dynamic card/runtime string is not allowlisted: $key" }
+}
 foreach ($key in @('运行时未就绪','网络不可用','（自动）','（为修复网络重置过安卓数据，点开应用会自动重装）','（未动你的数据）','运行时就绪，点开即用','运行时会按需自动准备','设备 / 端口')) {
     if ($null -eq $translations.PSObject.Properties[$key]) { throw "Home/status/context-menu translation missing: $key" }
     if ($null -eq @($appAllow | Where-Object { $_ -ceq $key })[0]) { throw "Home/status/context-menu string is not allowlisted: $key" }
