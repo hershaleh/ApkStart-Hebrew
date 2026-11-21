@@ -104,6 +104,8 @@ function Apply {
     $manifest=[ordered]@{Schema=1;TargetRoot=$target.Root;Version=$target.Version;BackupRoot=$backup;Files=@();Replacements=0}
     $translations=@{};foreach($p in $map.PSObject.Properties){$translations[$p.Name]=[string]$p.Value}
     $keys=@($translations.Keys | Sort-Object { $_.Length } -Descending)
+    $appAllowPath=Join-Path $root 'translations/app-js-allowlist.json'
+    $appAllow=@(Get-Content -LiteralPath $appAllowPath -Raw -Encoding UTF8 | ConvertFrom-Json)
     $names=@('main.js','index.html','app.js','shell.html','shell.js','manual.html','splash.html','splash.js','style.css','theme.css','shell.css','splash.css')
     $files=New-Object System.Collections.Generic.List[string]
     foreach($name in $names){$files.Add((Join-Path $target.Ui $name))}
@@ -118,6 +120,11 @@ function Apply {
             if($original.Contains('APKSTART-HEBREW')){throw ('נמצא תרגום קודם בקובץ '+$name+'. יש לשחזר לפני החלה חוזרת.')}
             $updated=$original;$count=0
             $fileKeys=$keys
+            if($name -eq 'app.js'){
+                # app.js contains UI text as well as internal command/event tokens.
+                # Only source-reviewed literal UI strings are eligible for replacement.
+                $fileKeys=@($appAllow | Where-Object { $translations.ContainsKey([string]$_) })
+            }
             if($name -eq 'main.js'){
                 # Main process contains internal protocol/configuration strings too.
                 # Only replace reviewed, user-visible menu/dialog phrases here.
