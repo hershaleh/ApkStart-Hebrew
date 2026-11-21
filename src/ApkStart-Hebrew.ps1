@@ -128,7 +128,9 @@ function Apply {
     $translations=@{};foreach($p in $map.PSObject.Properties){$translations[$p.Name]=[string]$p.Value}
     $keys=@($translations.Keys | Sort-Object { $_.Length } -Descending)
     $appAllowPath=Join-Path $root 'translations/app-js-allowlist.json'
+    $shellAllowPath=Join-Path $root 'translations/shell-ui-allowlist.json'
     $appAllow=@(Get-Content -LiteralPath $appAllowPath -Raw -Encoding UTF8 | ConvertFrom-Json)
+    $shellAllow=@(Get-Content -LiteralPath $shellAllowPath -Raw -Encoding UTF8 | ConvertFrom-Json)
     $names=@('main.js','index.html','app.js','shell.html','shell.js','manual.html','splash.html','splash.js','style.css','theme.css','shell.css','splash.css')
     $files=New-Object System.Collections.Generic.List[string]
     foreach($name in $names){$files.Add((Join-Path $target.Ui $name))}
@@ -142,6 +144,12 @@ function Apply {
             if($original.Contains('APKSTART-HEBREW')){throw ('נמצא תרגום קודם בקובץ '+$name+'. יש לשחזר לפני החלה חוזרת.')}
             $updated=$original;$count=0
             $fileKeys=$keys
+            if($name -in @('shell.html','shell.js')){
+                # The standalone app window has a tiny, reviewed UI surface. Do not
+                # run the broad dictionary over shell.js because it contains API names,
+                # event tokens and internal fallbacks.
+                $fileKeys=@($shellAllow | Where-Object { $translations.ContainsKey([string]$_) })
+            }
             if($name -eq 'app.js'){
                 # app.js contains UI text as well as internal command/event tokens.
                 # Only source-reviewed literal UI strings are eligible for replacement.
