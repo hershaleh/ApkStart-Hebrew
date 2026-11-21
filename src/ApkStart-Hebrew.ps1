@@ -141,8 +141,10 @@ function Apply {
     $keys=@($translations.Keys | Sort-Object { $_.Length } -Descending)
     $appAllowPath=Join-Path $root 'translations/app-js-allowlist.json'
     $shellAllowPath=Join-Path $root 'translations/shell-ui-allowlist.json'
+    $mainAllowPath=Join-Path $root 'translations/main-process-allowlist.json'
     $appAllow=@(Get-Content -LiteralPath $appAllowPath -Raw -Encoding UTF8 | ConvertFrom-Json)
     $shellAllow=@(Get-Content -LiteralPath $shellAllowPath -Raw -Encoding UTF8 | ConvertFrom-Json)
+    $mainAllow=@(Get-Content -LiteralPath $mainAllowPath -Raw -Encoding UTF8 | ConvertFrom-Json)
     $names=@('main.js','index.html','app.js','shell.html','shell.js','manual.html','splash.html','splash.js','style.css','theme.css','shell.css','splash.css')
     $files=New-Object System.Collections.Generic.List[string]
     foreach($name in $names){$files.Add((Join-Path $target.Ui $name))}
@@ -178,8 +180,7 @@ function Apply {
             if($name -eq 'main.js'){
                 # Main process contains internal protocol/configuration strings too.
                 # Only replace reviewed, user-visible menu/dialog phrases here.
-                $mainAllow=@('还没有安装应用','重建桌面/开始菜单快捷方式','同步共享目录','选择数据存放目录','选择要安装的 APK','Android 应用','选择驱动文件（.json）','驱动 JSON','导出本机驱动模板','确认清理运行时缓存','将释放约 ','自动检测发现新问题：','（设置 → 诊断与修复）','运行时已自动准备完成','正在完成上次未完成的更新…','正在替换程序并重启…','启动失败：')
-                $fileKeys=@($mainAllow | Where-Object { $translations.ContainsKey($_) })
+                $fileKeys=@($mainAllow | Where-Object { $translations.ContainsKey([string]$_) })
             }
             foreach($key in $fileKeys){if($updated.Contains($key)){$count+=([regex]::Matches($updated,[regex]::Escape($key))).Count;$updated=$updated.Replace($key,$translations[$key])}}
             if($name -in @('style.css','theme.css','shell.css','splash.css')){$updated=Rtl $updated}
