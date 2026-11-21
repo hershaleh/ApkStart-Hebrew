@@ -56,7 +56,7 @@ foreach ($key in $manualAllow) {
         throw "Manual allowlist key is missing from dictionary: $key"
     }
 }
-if ($source -notmatch "manual\.html','manual\.js'" -or $source -notmatch "manual-allowlist\.json") {
+if ($source -notmatch "manual\.html" -or $source -notmatch "manual-allowlist\.json" -or $source -match "\$files\.Add\(\$coreManual\)") {
     throw 'Manual translation must use its dedicated reviewed allowlist.'
 }
 
@@ -79,4 +79,8 @@ if ($source -notmatch '\[IO\.File\]::Replace\(\$tempPath,\$file,\$null,\$true\)'
 }
 if ($source -notmatch "'style\.css','theme\.css','shell\.css','splash\.css'") {
     throw 'RTL processing must include the startup splash stylesheet.'
+}
+
+if ($source -notmatch "src/core/manual\.js.*never patch it as text") {
+    throw 'Executable manual routing code must remain excluded from text translation.'
 }
