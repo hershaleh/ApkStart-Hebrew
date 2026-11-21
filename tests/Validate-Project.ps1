@@ -113,7 +113,7 @@ if ($errors.Count -gt 0) {
 foreach ($selector in @(
     '/* Settings, menus and dialogs: preserve',
     '.modal-main{direction:rtl}',
-    '.set-content{direction:rtl;text-align:right}',
+    '.modal-body{direction:rtl;text-align:right}',
     '.set-nav-item{justify-content:flex-start;text-align:right}',
     '.switch-field{direction:rtl;justify-content:space-between}',
     '.ctxmenu .item{direction:rtl;justify-content:flex-start;text-align:right}',
