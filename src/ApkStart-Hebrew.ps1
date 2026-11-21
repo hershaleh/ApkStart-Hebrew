@@ -104,7 +104,7 @@ function Apply {
     $manifest=[ordered]@{Schema=1;TargetRoot=$target.Root;Version=$target.Version;BackupRoot=$backup;Files=@();Replacements=0}
     $translations=@{};foreach($p in $map.PSObject.Properties){$translations[$p.Name]=[string]$p.Value}
     $keys=@($translations.Keys | Sort-Object { $_.Length } -Descending)
-    $names=@('index.html','app.js','shell.html','shell.js','manual.html','splash.html','splash.js','style.css','theme.css','shell.css','splash.css')
+    $names=@('main.js','index.html','app.js','shell.html','shell.js','manual.html','splash.html','splash.js','style.css','theme.css','shell.css','splash.css')
     $changed=0
     try {
         foreach($name in $names){
