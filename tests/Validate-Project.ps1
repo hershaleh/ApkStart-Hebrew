@@ -11,7 +11,7 @@ foreach ($path in @($script, $dict, $launcher)) {
 }
 
 $translations = Get-Content -LiteralPath $dict -Raw -Encoding UTF8 | ConvertFrom-Json
-if ($translations.PSObject.Properties.Count -lt 40) {
+if (@($translations.PSObject.Properties | Where-Object { $_.MemberType -eq 'NoteProperty' }).Count -lt 40) {
     throw 'Translation dictionary unexpectedly small.'
 }
 $hebrewCount = @($translations.PSObject.Properties | Where-Object { $_.Value -match '[\u0590-\u05FF]' }).Count
