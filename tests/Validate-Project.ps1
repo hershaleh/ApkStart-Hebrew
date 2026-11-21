@@ -5,8 +5,9 @@ $dict = Join-Path $root 'translations/he-IL.json'
 $launcher = Join-Path $root 'Run-ApkStart-Hebrew.cmd'
 $appAllowPath = Join-Path $root 'translations/app-js-allowlist.json'
 $manualAllowPath = Join-Path $root 'translations/manual-allowlist.json'
+$shellAllowPath = Join-Path $root 'translations/shell-ui-allowlist.json'
 
-foreach ($path in @($script, $dict, $launcher, $appAllowPath, $manualAllowPath)) {
+foreach ($path in @($script, $dict, $launcher, $appAllowPath, $manualAllowPath, $shellAllowPath)) {
     if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
         throw "Missing required project file: $path"
     }
@@ -48,6 +49,18 @@ if ($source -notmatch "\$mainAllow=@\('还没有安装应用'.*'启动失败：'
     throw 'Main-process translations must remain restricted to the reviewed UI allowlist.'
 }
 
+
+$shellAllow = Get-Content -LiteralPath $shellAllowPath -Raw -Encoding UTF8 | ConvertFrom-Json
+if (@($shellAllow).Count -lt 5) { throw 'Reviewed shell UI allowlist unexpectedly small.' }
+foreach ($key in $shellAllow) {
+    if ($null -eq $translations.PSObject.Properties[[string]$key]) {
+        throw "Shell UI allowlist key is missing from dictionary: $key"
+    }
+}
+if ($source -notmatch "shell-ui-allowlist\.json" -or $source -notmatch "\$name -in @\('shell\.html','shell\.js'\)") {
+    throw 'Standalone shell translations must use their dedicated reviewed allowlist.'
+}
+if ($translations.'应用' -ne 'יישום') { throw 'Standalone shell application fallback must use the Hebrew noun for application.' }
 
 $manualAllow = Get-Content -LiteralPath $manualAllowPath -Raw -Encoding UTF8 | ConvertFrom-Json
 if (@($manualAllow).Count -lt 80) { throw 'Reviewed manual allowlist unexpectedly small.' }
