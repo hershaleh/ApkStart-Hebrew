@@ -113,6 +113,18 @@ pre{overflow-x:auto}
     if($html -notmatch '(?i)</style>'){return $html}
     return [regex]::Replace($html,'(?i)</style>',($css+[Environment]::NewLine+'</style>'),1)
 }
+function RtlShell([string]$css) {
+    if($css.Contains('APKSTART-HEBREW:SHELL-RTL')){return $css}
+    $rules=@'
+
+/* APKSTART-HEBREW:SHELL-RTL */
+/* Keep the application identity on the right and window controls on the left. */
+.bar{direction:rtl;padding-left:0;padding-right:10px}
+.name{direction:rtl;text-align:right;unicode-bidi:plaintext}
+.ctl{direction:ltr}
+'@
+    return $css+$rules
+}
 function Apply {
     if (Get-Process -Name 'ApkStart' -ErrorAction SilentlyContinue) { Log 'ApkStart עדיין פועל. סגור אותו לפני החלת התרגום.' 'warning'; return }
     $target=Scan
@@ -171,6 +183,7 @@ function Apply {
             }
             foreach($key in $fileKeys){if($updated.Contains($key)){$count+=([regex]::Matches($updated,[regex]::Escape($key))).Count;$updated=$updated.Replace($key,$translations[$key])}}
             if($name -in @('style.css','theme.css','shell.css','splash.css')){$updated=Rtl $updated}
+            if($name -eq 'shell.css'){$updated=RtlShell $updated}
             if($updated -ne $original){
                 $relative=$file.Substring($target.Root.TrimEnd('\').Length).TrimStart('\','/')
                 $backupPath=Join-Path $backupFiles $relative
