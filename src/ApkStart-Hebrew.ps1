@@ -74,6 +74,7 @@ input[type="url"],input[type="number"],input[type="password"],code,pre,.mono,.lt
     return $text+$css
 }
 function Apply {
+    if (Get-Process -Name 'ApkStart' -ErrorAction SilentlyContinue) { Log 'ApkStart עדיין פועל. סגור אותו לפני החלת התרגום.' 'warning'; return }
     $target=Scan
     if(!$target -or $target.Status -ne 'Supported'){return}
     $nl=[Environment]::NewLine
@@ -122,6 +123,7 @@ function Apply {
     }
 }
 function Restore {
+    if (Get-Process -Name 'ApkStart' -ErrorAction SilentlyContinue) { Log 'ApkStart עדיין פועל. סגור אותו לפני שחזור קבצים.' 'warning'; return }
     if(!(Test-Path $stateFile)){Log 'לא נמצא גיבוי אחרון.' 'warning';return}
     try{
         $state=Get-Content $stateFile -Raw -Encoding UTF8 | ConvertFrom-Json
