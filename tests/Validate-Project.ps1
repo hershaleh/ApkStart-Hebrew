@@ -56,3 +56,14 @@ if ($errors.Count -gt 0) {
 }
 
 Write-Host ("Project validation passed. Hebrew entries: " + $hebrewCount) -ForegroundColor Green
+
+# Translation writes must be staged beside the target and atomically committed.
+if ($source -notmatch '\$tempPath=\$file\+''\.apkstart-hebrew\.tmp''') {
+    throw 'Translation must stage edits in a temporary file before replacing the original.'
+}
+if ($source -notmatch '\[IO\.File\]::Replace\(\$tempPath,\$file,\$null,\$true\)') {
+    throw 'Translation must atomically replace existing files.'
+}
+if ($source -notmatch "'style\.css','theme\.css','shell\.css','splash\.css'") {
+    throw 'RTL processing must include the startup splash stylesheet.'
+}
