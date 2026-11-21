@@ -39,6 +39,10 @@ if ($source -notmatch "splash\.html.*splash\.js.*splash\.css") {
     throw 'Startup splash files are not included in the patch target list.'
 }
 
+if ($source -notmatch "\$mainAllow=@\('还没有安装应用'.*'启动失败：'\)") {
+    throw 'Main-process translations must remain restricted to the reviewed UI allowlist.'
+}
+
 $tokens = $null
 $errors = $null
 [System.Management.Automation.Language.Parser]::ParseFile($script, [ref]$tokens, [ref]$errors) | Out-Null
