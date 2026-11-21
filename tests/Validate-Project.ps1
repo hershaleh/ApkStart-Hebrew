@@ -77,6 +77,11 @@ if ($translations.'应用' -ne 'יישום') { throw 'Standalone shell applicati
 
 $manualAllow = Get-Content -LiteralPath $manualAllowPath -Raw -Encoding UTF8 | ConvertFrom-Json
 if (@($manualAllow).Count -lt 80) { throw 'Reviewed manual allowlist unexpectedly small.' }
+foreach ($key in @('ApkStart 产品使用手册与问题解决方案','1. 30 秒看懂 ApkStart','2.1 选择适合你的版本','2.2 首次启动会发生什么','3.5 文件互通（Windows ↔ 安卓）','4. 理解三个核心概念（看懂报错的关键）','4.1 运行时 / 系统镜像','4.3 ARM 转译层','5. 遇到问题先做这一步：体检与自动检测','5.1 本机体检 · 自动配置','5.2 自动检测（自动 debug）','5.4 内置使用手册与自动教程','6. 常见问题解决方案','6.1 提示「未启用硬件加速」 / 开机很慢','6.2 安装失败（INSTALL_FAILED_*）','6.3 系统镜像没有 ARM 转译层 / ARM 应用装不上或闪退','6.4 adb 未授权（允许 USB 调试）','6.5 双击图标没反应 / 一直转圈 / 出现带旋转按钮的窗口','6.6 其它启动类问题速查表','6.7 应用没有声音 / 声音很小','6.8 商店版启动失败 / 0xC0000135（DLL 加载失败）','文件名','什么时候选','务必用最新版','三种方式任选：','双击 APK 文件','主界面里选「安装应用」','命令行：','支持 .apks / .xapk 拆分包（自动用 install-multiple ）。装完自动生成桌面 + 开始菜单快捷方式。','全屏 / 窗口模式切换','旋转当前应用横竖屏','自动全屏','强制横屏/竖屏','按键','作用','分类','主要内容')) {
+    if ($null -eq $translations.PSObject.Properties[$key]) { throw "Manual heading/table translation missing: $key" }
+    if ($null -eq @($manualAllow | Where-Object { $_ -ceq $key })[0]) { throw "Manual heading/table phrase is not allowlisted: $key" }
+    if ($translations[$key] -notmatch '[\u0590-\u05FF]') { throw "Manual heading/table phrase has no Hebrew translation: $key" }
+}
 foreach ($key in $manualAllow) {
     if ($null -eq $translations.PSObject.Properties[[string]$key]) {
         throw "Manual allowlist key is missing from dictionary: $key"
