@@ -109,8 +109,7 @@ function Apply {
     $names=@('main.js','index.html','app.js','shell.html','shell.js','manual.html','splash.html','splash.js','style.css','theme.css','shell.css','splash.css')
     $files=New-Object System.Collections.Generic.List[string]
     foreach($name in $names){$files.Add((Join-Path $target.Ui $name))}
-    $coreManual=Join-Path $target.Root 'src/core/manual.js'
-    if(Test-Path -LiteralPath $coreManual){$files.Add($coreManual)}
+    # src/core/manual.js contains executable matching rules and regexes; never patch it as text.
     $changed=0
     try {
         foreach($file in $files){
@@ -125,7 +124,7 @@ function Apply {
                 # Only source-reviewed literal UI strings are eligible for replacement.
                 $fileKeys=@($appAllow | Where-Object { $translations.ContainsKey([string]$_) })
             }
-            if($name -in @('manual.html','manual.js')){
+            if($name -eq 'manual.html'){
                 # The manual contains technical examples and executable-looking strings.
                 # Translate only reviewed, user-facing manual phrases.
                 $manualAllowPath=Join-Path $root 'translations/manual-allowlist.json'
