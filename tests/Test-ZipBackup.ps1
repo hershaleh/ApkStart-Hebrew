@@ -68,6 +68,10 @@ try{
  try{foreach($x in @(@{p=$manifest;n='manifest.json'},@{p=$payload;n='files/src/ui/index.html'})){$e=$a.CreateEntry($x.n);$i=[IO.File]::OpenRead($x.p);try{$o=$e.Open();try{$i.CopyTo($o)}finally{$o.Dispose()}}finally{$i.Dispose()}}}finally{$a.Dispose()}
  $rejected=$false;try{Validate-Zip $tampered2 (Join-Path $w 'tampered-stage')|Out-Null}catch{$rejected=$true};Assert $rejected 'SHA-256 tampering rejection'
 
+ # Restore a valid manifest after the preceding tampering test so the next
+ # cases prove duplicate/unlisted-entry checks, not a secondary hash failure.
+ $m=Get-Content $manifest -Raw|ConvertFrom-Json;$m.Files[0].BackupHash=$hash
+ $m|ConvertTo-Json -Depth 8|Set-Content $manifest
  # Duplicate archive entry names must be rejected before extraction.
  $duplicate=Join-Path $w 'duplicate.zip';$a=[IO.Compression.ZipFile]::Open($duplicate,[IO.Compression.ZipArchiveMode]::Create)
  try{
@@ -75,7 +79,7 @@ try{
    $e=$a.CreateEntry($x.n);$i=[IO.File]::OpenRead($x.p);try{$o=$e.Open();try{$i.CopyTo($o)}finally{$o.Dispose()}}finally{$i.Dispose()}
   }
  }finally{$a.Dispose()}
- $rejected=$false;try{Validate-Zip $duplicate (Join-Path $w 'duplicate-stage')|Out-Null}catch{$rejected=$true};Assert $rejected 'duplicate archive entry rejection'
+ $rejected=$false;try{Validate-Zip $duplicate (Join-Path $w 'duplicate-stage')|Out-Null}catch{$rejected=($_.Exception.Message -match 'directory or duplicate')};Assert $rejected 'duplicate archive entry rejection (specific reason)'
  # Entries not listed in the manifest must be rejected (even when their paths are safe).
  $extra=Join-Path $w 'extra.zip';$a=[IO.Compression.ZipFile]::Open($extra,[IO.Compression.ZipArchiveMode]::Create)
  try{
@@ -83,7 +87,7 @@ try{
    $e=$a.CreateEntry($x.n);$i=[IO.File]::OpenRead($x.p);try{$o=$e.Open();try{$i.CopyTo($o)}finally{$o.Dispose()}}finally{$i.Dispose()}
   }
  }finally{$a.Dispose()}
- $rejected=$false;try{Validate-Zip $extra (Join-Path $w 'extra-stage')|Out-Null}catch{$rejected=$true};Assert $rejected 'unlisted archive entry rejection'
+ $rejected=$false;try{Validate-Zip $extra (Join-Path $w 'extra-stage')|Out-Null}catch{$rejected=($_.Exception.Message -match 'manifest exact count|manifest membership')};Assert $rejected 'unlisted archive entry rejection (specific reason)'
 
- Write-Host 'ZIP backup integration tests passed: roundtrip, ZIP-slip, SHA-256 tampering.'
+ Write-Host 'ZIP backup integration tests passed: roundtrip, ZIP-slip, SHA-256 tampering, duplicate entries, unlisted entries.'
 }finally{if(Test-Path $w){Remove-Item $w -Recurse -Force -ErrorAction SilentlyContinue}}
