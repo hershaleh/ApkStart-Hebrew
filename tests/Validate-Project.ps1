@@ -92,7 +92,7 @@ foreach ($required in @(
     'Status=''Supported''',
     'index.html'',''app.js'',''main.js'',''style.css'',''theme.css',
     'גרסה לא מאומתת — ההחלה חסומה',
-    "(Resolve-Target \$_).Status -in @('Supported',''UnsupportedVersion'',''UnsupportedStructure'',''ASAR'')"
+    '(Resolve-Target $_).Status -in @(''Supported'',''UnsupportedVersion'',''UnsupportedStructure'',''ASAR'')'
 )) {
     if (-not $source.Contains($required)) { throw "Version compatibility safeguard missing: $required" }
 }
