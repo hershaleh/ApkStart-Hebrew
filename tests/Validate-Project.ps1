@@ -78,7 +78,7 @@ foreach ($required in @(
     '$script:Target=$null',
     'הנתיב השתנה — יש לבצע סריקה מחדש',
     'נדרשת בחירת תיקייה וסריקה',
-    'elseif(`$target.Status -eq ''MSIX''),
+    'elseif($target.Status -eq ''MSIX'')',
     'כפתור ההחלה יופעל רק להתקנה תואמת'
 )) {
     if (-not $source.Contains($required)) { throw "UI action-state safeguard missing: $required" }
