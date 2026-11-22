@@ -231,3 +231,10 @@ foreach ($key in @('：安卓应用里视频、提示音完全没声；或 Windo
     if ($translations[$key] -notmatch '[\u0590-\u05FF]') { throw "Audio/Store troubleshooting text has no Hebrew translation: $key" }
     if ($null -eq @($manualAllow | Where-Object { $_ -ceq $key })[0]) { throw "Audio/Store troubleshooting text is not allowlisted: $key" }
 }
+
+# Startup and quick-reference troubleshooting text must remain explicitly translated and allowlisted.
+foreach ($key in @('运行入口或窗口接管','① 确认你用的是新版程序','② 开机时长要有预期','③ 原生窗口没接管 → 退回带旋转按钮的嵌入窗口','从目录联接 / 非标准路径启动时容易触发；0.6.3 已让代理解析真实路径再匹配。若仍出现，附日志反馈。','④ 重置安卓数据（最后手段）','按 6.1 开启加速','下调内存与核心数','关闭占内存的程序','模拟器端口被占用','残留锁文件 / "Running multiple emulators with the same AVD"','自动清 AVD 锁并重试','确认没有别的模拟器在用同一运行时','系统镜像缺失/损坏/与旧数据不兼容','用干净用户数据重新开机','设置 → 运行时删镜像重下','快速启动快照损坏','丢弃旧快照走冷启动','下次正常退出会重建；或关掉快照','运行时组件被删/缺 VC++ 运行库','把运行时目录改到空间充足的盘；关掉快照/调小数据分区','路径含中文/特殊字符','CPU 缺少指令集（AVX/SSE4）','多为警告仍可开机；否则换支持 VT-x/AVX 的机器或旧版引擎','当前运行时不接受该 GPU 模式','按引擎版本重选可用的 GPU 模式','多组参数自动重试','桌面图标显示成 ApkStart 的图标 / 空白图标')) {
+    if ($null -eq $translations.PSObject.Properties[$key]) { throw "Startup troubleshooting translation missing: $key" }
+    if ($translations[$key] -notmatch '[\u0590-\u05FF]') { throw "Startup troubleshooting text has no Hebrew translation: $key" }
+    if ($null -eq @($manualAllow | Where-Object { $_ -ceq $key })[0]) { throw "Startup troubleshooting text is not allowlisted: $key" }
+}
