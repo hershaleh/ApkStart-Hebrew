@@ -42,10 +42,18 @@ function Test-ReviewedStructure([string]$candidate,[string]$ui,[ref]$reason) {
     return $true
 }
 function Resolve-Target([string]$path) {
-    if (!$path) { return $null }
-    $path=[IO.Path]::GetFullPath($path.Trim().Trim('"'))
-    if ($path -match '(?i)\\WindowsApps\\') { return [pscustomobject]@{Status='MSIX';Root=$path;Ui=$null;Version='—';Message='זוהתה התקנת Microsoft Store / MSIX. חבילה חתומה לא תשונה.'} }
-    foreach ($candidate in @($path,(Join-Path $path 'resources/app'),(Join-Path $path 'app'))) {
+    if ([string]::IsNullOrWhiteSpace($path)) { return $null }
+    try {
+        $path=[IO.Path]::GetFullPath($path.Trim().Trim('"'))
+    } catch {
+        return [pscustomobject]@{Status='InvalidPath';Root=$path;Ui=$null;Version='—';Message='הנתיב שהוזן אינו תקין. בחר תיקייה קיימת.'}
+    }
+    if(-not (Test-Path -LiteralPath $path -PathType Container)){
+        return [pscustomobject]@{Status='InvalidPath';Root=$path;Ui=$null;Version='—';Message='התיקייה שנבחרה אינה קיימת או שאינה תיקייה. בחר את תיקיית ApkStart, את resources/app או את תיקיית app.'}
+    }
+    if ($path -match '(?i)\\WindowsApps(?:\\|$)') { return [pscustomobject]@{Status='MSIX';Root=$path;Ui=$null;Version='—';Message='זוהתה התקנת Microsoft Store / MSIX. חבילה חתומה לא תשונה.'} }
+    $candidates=@($path,(Join-Path $path 'resources/app'),(Join-Path $path 'app'))
+    foreach ($candidate in ($candidates | Select-Object -Unique)) {
         $ui=Join-Path $candidate 'src/ui'
         $requiredFiles=@('index.html','app.js','main.js','style.css','theme.css')
         $missing=@($requiredFiles | Where-Object { -not (Test-Path -LiteralPath (Join-Path $ui $_) -PathType Leaf) })
@@ -68,10 +76,11 @@ function Resolve-Target([string]$path) {
             return [pscustomobject]@{Status='Supported';Root=$candidate;Ui=$ui;Version=$version;Message='נמצאה גרסה 0.6.3 עם מבנה ממשק תואם לסימנים שנבדקו.'}
         }
     }
-    if ((Test-Path (Join-Path $path 'resources/app.asar')) -or (Test-Path (Join-Path $path 'app.asar'))) {
+    $asarCandidates=@((Join-Path $path 'resources/app.asar'),(Join-Path $path 'app.asar'),(Join-Path $path 'resources/app/app.asar'))
+    if(@($asarCandidates | Where-Object {Test-Path -LiteralPath $_ -PathType Leaf}).Count -gt 0){
         return [pscustomobject]@{Status='ASAR';Root=$path;Ui=$null;Version='—';Message='נמצא app.asar. הכלי אינו משנה ארכיוני ASAR בשלב זה.'}
     }
-    return [pscustomobject]@{Status='Unknown';Root=$path;Ui=$null;Version='—';Message='לא נמצאו קובצי ממשק נתמכים. בחר את תיקיית ההתקנה או resources/app.'}
+    return [pscustomobject]@{Status='Unknown';Root=$path;Ui=$null;Version='—';Message='התיקייה קיימת, אך לא נמצאו בה קובצי ApkStart נתמכים. נסה לבחור את תיקיית ההתקנה, resources/app או app.'}
 }
 function Detect-Targets {
     $list=New-Object System.Collections.Generic.List[string]
@@ -114,6 +123,25 @@ function Get-SafeRelativePath([string]$relative) {
     if(-not ($normalized -match $allowedUi -or $normalized -ceq 'src\core\autodebug.js')){throw 'הגיבוי מפנה לקובץ שאינו חלק מרשימת קובצי הממשק המותרים.'}
     return $normalized
 }
+function Select-DetectedInstall([string[]]$targets) {
+    if($targets.Count -eq 0){return $null}
+    if($targets.Count -eq 1){return $targets[0]}
+    $dialog=New-Object Windows.Forms.Form
+    $dialog.Text='בחירת התקנת ApkStart';$dialog.Size=New-Object Drawing.Size(650,190);$dialog.StartPosition='CenterParent';$dialog.RightToLeft='Yes';$dialog.RightToLeftLayout=$true
+    $label=New-Object Windows.Forms.Label;$label.Text='נמצאו כמה התקנות. בחר באיזו מהן להשתמש:';$label.AutoSize=$true;$label.Location=New-Object Drawing.Point(18,15);$dialog.Controls.Add($label)
+    $combo=New-Object Windows.Forms.ComboBox;$combo.DropDownStyle='DropDownList';$combo.Location=New-Object Drawing.Point(18,45);$combo.Size=New-Object Drawing.Size(595,28);$combo.RightToLeft='No'
+    foreach($targetPath in $targets){
+        $resolved=Resolve-Target $targetPath
+        $combo.Items.Add(($resolved.Version+' | '+$resolved.Status+' | '+$targetPath)) | Out-Null
+    }
+    $combo.SelectedIndex=0;$dialog.Controls.Add($combo)
+    $ok=New-Object Windows.Forms.Button;$ok.Text='בחר';$ok.DialogResult=[Windows.Forms.DialogResult]::OK;$ok.Location=New-Object Drawing.Point(435,90);$dialog.Controls.Add($ok)
+    $cancel=New-Object Windows.Forms.Button;$cancel.Text='ביטול';$cancel.DialogResult=[Windows.Forms.DialogResult]::Cancel;$cancel.Location=New-Object Drawing.Point(525,90);$dialog.Controls.Add($cancel)
+    $dialog.AcceptButton=$ok;$dialog.CancelButton=$cancel
+    if($dialog.ShowDialog($form) -eq [Windows.Forms.DialogResult]::OK){return $targets[$combo.SelectedIndex]}
+    return $null
+}
+
 function Scan {
     $target=Resolve-Target $pathBox.Text
     $script:Target=$target
@@ -122,6 +150,7 @@ function Scan {
     if($target.Status -eq 'Supported'){$statusLabel.Text='נמצאה התקנה נתמכת';$statusLabel.ForeColor=[Drawing.Color]::DarkGreen;Log ($target.Message+' '+$target.Root) 'success'}
     elseif($target.Status -eq 'UnsupportedVersion'){$statusLabel.Text='גרסה לא מאומתת — ההחלה חסומה';$statusLabel.ForeColor=[Drawing.Color]::DarkGoldenrod;Log ($target.Message+' '+$target.Root) 'warning'}
     elseif($target.Status -eq 'UnsupportedStructure'){$statusLabel.Text='מבנה השתנה — נדרשת בדיקה מחדש';$statusLabel.ForeColor=[Drawing.Color]::DarkGoldenrod;Log ($target.Message+' '+$target.Root) 'warning'}
+    elseif($target.Status -eq 'InvalidPath'){$statusLabel.Text='נתיב לא תקין';$statusLabel.ForeColor=[Drawing.Color]::Firebrick;Log $target.Message 'error'}
     elseif($target.Status -eq 'ASAR'){$statusLabel.Text='נדרש טיפול ייעודי ב-ASAR';$statusLabel.ForeColor=[Drawing.Color]::DarkGoldenrod;Log $target.Message 'warning'}
     else{$statusLabel.Text='התקנה אינה נתמכת';$statusLabel.ForeColor=[Drawing.Color]::Firebrick;Log $target.Message 'error'}
     return $target
@@ -449,7 +478,7 @@ $note=New-Object Windows.Forms.Label;$note.Text='התרגום עדיין חלק�
 $logTitle=New-Object Windows.Forms.Label;$logTitle.Text='יומן פעולות';$logTitle.AutoSize=$true;$logTitle.Location=New-Object Drawing.Point(22,226);$main.Controls.Add($logTitle)
 $logBox=New-Object Windows.Forms.RichTextBox;$logBox.Location=New-Object Drawing.Point(22,251);$logBox.Size=New-Object Drawing.Size(756,290);$logBox.Anchor='Top,Bottom,Left,Right';$logBox.ReadOnly=$true;$logBox.BackColor=[Drawing.Color]::White;$logBox.Font=New-Object Drawing.Font('Consolas',9);$logBox.RightToLeft='Yes';$main.Controls.Add($logBox)
 $browse.Add_Click({$d=New-Object Windows.Forms.FolderBrowserDialog;$d.Description='בחר תיקיית ApkStart או resources/app';if($d.ShowDialog() -eq [Windows.Forms.DialogResult]::OK){$pathBox.Text=$d.SelectedPath;Scan | Out-Null}})
-$detect.Add_Click({foreach($p in (Detect-Targets)){$t=Resolve-Target $p;if($t.Status -in @('Supported','UnsupportedVersion','UnsupportedStructure')){$pathBox.Text=$p;Scan | Out-Null;return}};Log 'לא נמצאה התקנה מזוהה. בחר תיקייה ידנית.' 'warning'})
+$detect.Add_Click({$found=@(Detect-Targets | Where-Object { (Resolve-Target $_).Status -in @('Supported','UnsupportedVersion','UnsupportedStructure','ASAR') });if($found.Count -eq 0){Log 'לא נמצאה התקנה מזוהה. בחר תיקייה ידנית.' 'warning';return};$chosen=Select-DetectedInstall $found;if($chosen){$pathBox.Text=$chosen;Scan | Out-Null}})
 $scan.Add_Click({Scan | Out-Null});$apply.Add_Click({Apply});$restore.Add_Click({Restore})
-$form.Add_Shown({Log 'ברוך הבא. סגור את ApkStart לפני החלה או שחזור.';foreach($p in (Detect-Targets)){$t=Resolve-Target $p;if($t.Status -in @('Supported','UnsupportedVersion','UnsupportedStructure')){$pathBox.Text=$p;Scan | Out-Null;break}}})
+$form.Add_Shown({Log 'ברוך הבא. סגור את ApkStart לפני החלה או שחזור.';$found=@(Detect-Targets | Where-Object { (Resolve-Target $_).Status -in @('Supported','UnsupportedVersion','UnsupportedStructure','ASAR') });if($found.Count -gt 0){$chosen=Select-DetectedInstall $found;if($chosen){$pathBox.Text=$chosen;Scan | Out-Null}}})
 [void]$form.ShowDialog()
