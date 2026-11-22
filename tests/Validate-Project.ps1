@@ -266,3 +266,10 @@ foreach ($key in @('Gitee：（国内直连快得多）','从 Microsoft Store �
     if ($translations[$key] -notmatch '[\u0590-\u05FF]') { throw "Install/first-launch manual phrase has no Hebrew translation: $key" }
     if ($null -eq @($manualAllow | Where-Object { $_ -ceq $key })[0]) { throw "Install/first-launch manual phrase is not allowlisted: $key" }
 }
+
+# Reviewed settings navigation, display, updates, and acceleration manual phrases.
+foreach ($key in @('操作','方法','全屏 / 窗口切换','旋转横竖屏','自动全屏','强制横屏/竖屏','只有"面板方向和应用方向不一致"的那一次才会重启运行时（约 40 秒，标题栏会给提示），同方向的应用之后都秒进。','从 0.6.0 起分八类，顶部有搜索框（输入"横屏""内存""代理"等关键词，跨分类命中）：','分类','主要内容','常用与安装','运行时与环境、一键完成、开机自启、磁盘占用与清理','显示与窗口','显示模式、自动全屏、屏幕方向、平板排版、窗口承载方式','操作与输入','鼠标键位、键盘映射','性能与资源','资源策略、画质、数据分区、系统语言、快照、开机预热','网络与下载','更新与下载源、加速镜像、下载线程数','诊断与修复','本机体检、驱动/兼容补丁、自动检测','集成与文件','桌面与应用、文件互通、系统集成','更新与关于','软件更新、关于','实验室','Windows 原生多窗口多开（实验性）、后台保留数','设置 → 更新与关于 → 检查更新，或托盘右键 → 检查更新。更新链路现测现选最快的源（GitHub / Gitee / 镜像），分块并行下载，失败自动换源。更新不会丢运行时、已装应用和快照。','新版便携版支持 增量更新','说明：只有用「检查更新」从 GitHub / Gitee 装便携版的用户走增量；从微软商店装的走 Store 通道。增量对已装应用、安卓数据、运行时和快照都没有影响。','模拟器要跑得快，需要 CPU 虚拟化加速。Windows 上只有两条路：','方式','是什么','谁需要管理员','装完要重启吗','Windows 自带功能"Windows 虚拟机监控程序平台"（HypervisorPlatform）','开此功能时','Google 自家内核驱动','装驱动时','没有加速也能跑','需要你亲自做的只有两类：','重启进 BIOS → 打开 Intel VT-x / AMD SVM → Enabled（这一步软件无法代劳）。','Windows 功能 / 加速驱动 ：见 6.1。')) {
+    if ($null -eq $translations.PSObject.Properties[$key]) { throw "Settings manual translation missing: $key" }
+    if ($translations[$key] -notmatch '[\u0590-\u05FF]') { throw "Settings manual phrase has no Hebrew translation: $key" }
+    if ($null -eq @($manualAllow | Where-Object { $_ -ceq $key })[0]) { throw "Settings manual phrase is not allowlisted: $key" }
+}
