@@ -105,3 +105,8 @@
 - Expanded remaining troubleshooting guidance for ARM translation-layer fallback, virtualization prerequisites, legacy-image compatibility, and Microsoft Store DLL diagnostics.
 - Added Hebrew text for the manual's final caveats, upgrade guidance, and version note.
 - Extended validation to require every phrase in the dictionary, verify Hebrew text, and confirm dedicated manual allowlisting.
+
+
+## Installation and display troubleshooting table completion
+- Added reviewed Hebrew translations for the remaining standalone APK installation error causes and remedies, plus display-orientation settings paths.
+- Added dedicated dictionary, Hebrew-content, and allowlist validation for all entries in this batch.
