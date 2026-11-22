@@ -89,3 +89,8 @@
 ## Installation and first launch guide
 - Added reviewed Hebrew translations for edition selection, Store/full/portable/lightweight package descriptions, first-run runtime setup, APK installation steps, and built-in manual access.
 - Added dedicated dictionary, Hebrew-content, and allowlist assertions for this batch.
+
+
+## Settings, display, updates, and acceleration
+- Expanded the manual translation for settings categories and their contents, display orientation, update channels, incremental updates, and Windows virtualization acceleration.
+- Added dictionary, Hebrew-content, and allowlist assertions for all reviewed strings in this batch.
