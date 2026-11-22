@@ -87,9 +87,9 @@ $autoDebugAllow = Get-Content -LiteralPath $autoDebugAllowPath -Raw -Encoding UT
 if (@($autoDebugAllow).Count -lt 55) { throw 'Reviewed automatic-diagnostics allowlist unexpectedly small.' }
 foreach ($key in $autoDebugAllow) {
     if ($null -eq $translations.PSObject.Properties[[string]$key]) { throw "Automatic-diagnostics allowlist key is missing from dictionary: $key" }
-    if ($translations[[string]$key] -notmatch '[\\u0590-\\u05FF]') { throw "Automatic-diagnostics phrase has no Hebrew translation: $key" }
+    if ($translations[[string]$key] -notmatch '[\u0590-\u05FF]') { throw "Automatic-diagnostics phrase has no Hebrew translation: $key" }
 }
-if ($source -notmatch 'src/core/autodebug\\.js' -or $source -notmatch 'autodebug-allowlist\\.json' -or $source -notmatch "\\$name -eq 'autodebug\\.js'" -or $source -notmatch 'complete JavaScript string/template literals only') {
+if (-not $source.Contains("Join-Path $target.Root 'src/core/autodebug.js'") -or -not $source.Contains('autodebug-allowlist.json') -or -not $source.Contains("if($name -eq 'autodebug.js')") -or -not $source.Contains('complete JavaScript string/template literals only')) {
     throw 'Diagnostic engine translations must use their dedicated reviewed allowlist.'
 }
 
