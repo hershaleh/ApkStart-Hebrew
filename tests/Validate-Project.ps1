@@ -135,6 +135,14 @@ if ($source -notmatch "manual\.html" -or $source -notmatch "manual-allowlist\.js
 }
 
 
+
+# Additional reviewed manual paragraphs and troubleshooting instructions.
+foreach ($key in @('让安卓应用像 Windows 原生软件一样安装、出现在桌面、双击即用。','本手册先教你怎么用，再按「症状」给出可照做的解决方案。所有步骤都对应软件里真实存在的按钮和菜单。','注：本项目为早期版本，作者业余时间维护，开源免费、无广告。遇到问题是正常的，本手册就是为此准备的。','务必用最新版（当前 0.6.3）','只想先试试，首次启动再联网下载运行时','能被 Windows 搜到','Windows 原生多窗口多开（实验性）','本机体检、驱动/兼容补丁、自动检测','桌面与应用、文件互通、系统集成','更新与下载源、加速镜像、下载线程数','资源策略、画质、数据分区、系统语言、快照、开机预热','显示模式、自动全屏、屏幕方向、平板排版、窗口承载方式','运行时与环境、一键完成、开机自启、磁盘占用与清理','后台每 10 分钟把机器查一遍，按六类列问题，每条可','报告是纯文本，含本机配置、自动选中的启动参数、日志和诊断结论。反馈问题时附上它，能大幅加快定位。','自动修复失败后，会自动弹出相应教程','同一个教程在一次运行里只自动弹一次，不会反复打断你。','两个坑：① 别只开 VirtualMachinePlatform，那不是模拟器要的加速；② 若 BIOS 里 VT-x/SVM 没开，先按 5.1 进 BIOS 打开，否则系统功能开了也没用。','绝大多数国产安卓应用只提供','一个通用 Android 14 镜像','ApkStart 会自动做什么：','切换镜像会重启运行时，一次约 40 秒到 1 分钟，期间可能看到提示窗口。','重置安卓数据 / 清空安卓数据','必须勾选。0.6.3 的自动检测会检查这一项；若发现被关掉，会在「设置 → 诊断与修复」里报出来，点「处理」即可一键打开。','改完必须重启一次安卓运行时','本手册对应 v0.6.3，随版本更新。若界面文案与此处略有出入，以软件内实际显示为准。')) {
+    if ($null -eq $translations.PSObject.Properties[$key]) { throw "Manual paragraph translation missing: $key" }
+    if ($null -eq @($manualAllow | Where-Object { $_ -ceq $key })[0]) { throw "Manual paragraph is not allowlisted: $key" }
+    if ($translations[$key] -notmatch '[\u0590-\u05FF]') { throw "Manual paragraph has no Hebrew text: $key" }
+}
+
 # Manual body coverage: verify real paragraph-level phrases, not only navigation labels.
 foreach ($key in @('本项目为早期版本，作者业余时间维护，开源免费、无广告。遇到问题是正常的，本手册就是为此准备的。','首次启动慢是正常的，属"一次性成本"。之后再用就是秒进。','模拟器要跑得快，需要 CPU 虚拟化加速。Windows 上只有两条路：','如果系统本身也没声音，先去解决 Windows 音频；只有 ApkStart 里的应用没声才按下面查。','按顺序排查')) {
     if ($null -eq $translations.PSObject.Properties[$key]) { throw "Manual body translation missing: $key" }
