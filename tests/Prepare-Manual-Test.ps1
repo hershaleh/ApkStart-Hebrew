@@ -4,12 +4,12 @@ Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 
 function Fail([string]$message) {
-    [Windows.Forms.MessageBox]::Show($message,'הכנת בדיקת ApkStart',[Windows.Forms.MessageBoxButtons]::OK,[Windows.Forms.MessageBoxIcon]::Error) | Out-Null
+    [Windows.Forms.MessageBox]::Show($message,'Prepare ApkStart Test',[Windows.Forms.MessageBoxButtons]::OK,[Windows.Forms.MessageBoxIcon]::Error) | Out-Null
     exit 1
 }
 
 $dialog = New-Object Windows.Forms.FolderBrowserDialog
-$dialog.Description = 'בחר את תיקיית ApkStart, או את resources/app'
+$dialog.Description = 'Select the ApkStart installation folder, or its resources/app folder.'
 $dialog.ShowNewFolderButton = $false
 if ($dialog.ShowDialog() -ne [Windows.Forms.DialogResult]::OK) { exit 0 }
 $selected = [IO.Path]::GetFullPath($dialog.SelectedPath)
@@ -20,12 +20,12 @@ foreach ($p in @($selected,(Join-Path $selected 'resources/app'),(Join-Path $sel
     $required = @('index.html','app.js','main.js','style.css','theme.css')
     if (@($required | Where-Object { -not (Test-Path -LiteralPath (Join-Path $ui $_) -PathType Leaf) }).Count -eq 0) { $candidate = $p; break }
 }
-if (-not $candidate) { Fail 'לא נמצאו קובצי ApkStart פרוסים בתיקייה שנבחרה. נסה לבחור את תיקיית ההתקנה או resources/app.' }
+if (-not $candidate) { Fail 'No unpacked ApkStart files were found in the selected folder. Select the installation folder or resources/app.' }
 
 $packagePath = Join-Path $candidate 'package.json'
-if (-not (Test-Path -LiteralPath $packagePath -PathType Leaf)) { Fail 'לא נמצא package.json. לא ניתן לאמת את גרסת ApkStart.' }
-try { $package = Get-Content -LiteralPath $packagePath -Raw -Encoding UTF8 | ConvertFrom-Json } catch { Fail 'קובץ package.json אינו תקין.' }
-if ([string]$package.version -ne '0.6.3') { Fail ('נמצאה גרסה '+[string]$package.version+'. הבדיקה המבודדת מיועדת כרגע לגרסה 0.6.3 בלבד.') }
+if (-not (Test-Path -LiteralPath $packagePath -PathType Leaf)) { Fail 'package.json was not found. The ApkStart version cannot be verified.' }
+try { $package = Get-Content -LiteralPath $packagePath -Raw -Encoding UTF8 | ConvertFrom-Json } catch { Fail 'package.json is invalid.' }
+if ([string]$package.version -ne '0.6.3') { Fail ('Detected version '+[string]$package.version+'. The isolated test currently supports version 0.6.3 only.') }
 
 $ui = Join-Path $candidate 'src/ui'
 $anchors = @(
@@ -35,12 +35,12 @@ $anchors = @(
 )
 foreach ($check in $anchors) {
     $raw = [IO.File]::ReadAllText($check.Path,[Text.Encoding]::UTF8)
-    foreach ($anchor in $check.Values) { if (-not $raw.Contains($anchor)) { Fail ('מבנה ApkStart שונה מהמבנה שנבדק. חסר סימן: '+$anchor+'. לא נוצר עותק בדיקה.') } }
+    foreach ($anchor in $check.Values) { if (-not $raw.Contains($anchor)) { Fail ('ApkStart structure differs from the tested version. Missing marker: '+$anchor+'. No test copy was created.') } }
 }
 
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $manager = Join-Path $projectRoot 'src/ApkStart-Hebrew.ps1'
-if (-not (Test-Path -LiteralPath $manager -PathType Leaf)) { Fail 'לא נמצא סקריפט ApkStart-Hebrew.ps1. הפעל את הקובץ מתוך תיקיית הפרויקט המלאה.' }
+if (-not (Test-Path -LiteralPath $manager -PathType Leaf)) { Fail 'ApkStart-Hebrew.ps1 was not found. Run this file from the complete project folder.' }
 
 $testBase = Join-Path $env:LOCALAPPDATA 'ApkStart-Hebrew/TestCopies'
 New-Item -ItemType Directory -Path $testBase -Force | Out-Null
@@ -61,8 +61,10 @@ try {
     $launch.Arguments = '-NoProfile -ExecutionPolicy Bypass -File "'+$manager+'" -InitialTargetPath "'+$testRoot+'"'
     $launch.UseShellExecute = $true
     [Diagnostics.Process]::Start($launch) | Out-Null
-    [Windows.Forms.MessageBox]::Show("נוצר עותק בדיקה מבודד:`r`n$testRoot`r`n`r`nחלון הכלי נפתח כשהעותק כבר נבחר.`r`n1. ודא שמופיעה גרסה 0.6.3 והתקנה נתמכת.`r`n2. לחץ על החלת עברית ואשר.`r`n3. בדוק ביומן שנוצר גיבוי.`r`n4. פתח את היסטוריית הגיבויים ושחזר את הגיבוי של עותק הבדיקה.`r`n`r`nאל תמחק את עותק הבדיקה לפני השחזור. ההתקנה המקורית לא שונתה.",'עותק הבדיקה מוכן',[Windows.Forms.MessageBoxButtons]::OK,[Windows.Forms.MessageBoxIcon]::Information) | Out-Null
+    $nl = [Environment]::NewLine
+    $message = 'An isolated test copy was created:'+$nl+$testRoot+$nl+$nl+'The manager opened with this copy selected.'+$nl+'1. Confirm that version 0.6.3 and a supported installation are detected.'+$nl+'2. Click Apply Hebrew and confirm.'+$nl+'3. Check the log for a created backup.'+$nl+'4. Open Backup History and restore the backup belonging to this test copy.'+$nl+$nl+'Do not delete the test copy before restoring it. Your original installation was not modified.'
+    [Windows.Forms.MessageBox]::Show($message,'Test copy is ready',[Windows.Forms.MessageBoxButtons]::OK,[Windows.Forms.MessageBoxIcon]::Information) | Out-Null
 } catch {
     try { if (Test-Path -LiteralPath $testRoot) { Remove-Item -LiteralPath $testRoot -Recurse -Force } } catch {}
-    Fail ('הכנת עותק הבדיקה נכשלה: '+$_.Exception.Message)
+    Fail ('Could not prepare the test copy: '+$_.Exception.Message)
 }
