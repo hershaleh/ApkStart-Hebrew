@@ -201,12 +201,16 @@ function Apply {
     $appAllowPath=Join-Path $root 'translations/app-js-allowlist.json'
     $shellAllowPath=Join-Path $root 'translations/shell-ui-allowlist.json'
     $mainAllowPath=Join-Path $root 'translations/main-process-allowlist.json'
+    $autoDebugAllowPath=Join-Path $root 'translations/autodebug-allowlist.json'
     $appAllow=@(Get-Content -LiteralPath $appAllowPath -Raw -Encoding UTF8 | ConvertFrom-Json)
     $shellAllow=@(Get-Content -LiteralPath $shellAllowPath -Raw -Encoding UTF8 | ConvertFrom-Json)
     $mainAllow=@(Get-Content -LiteralPath $mainAllowPath -Raw -Encoding UTF8 | ConvertFrom-Json)
+    $autoDebugAllow=@(Get-Content -LiteralPath $autoDebugAllowPath -Raw -Encoding UTF8 | ConvertFrom-Json)
     $names=@('main.js','index.html','app.js','shell.html','shell.js','manual.html','splash.html','splash.js','style.css','theme.css','shell.css','splash.css')
     $files=New-Object System.Collections.Generic.List[string]
     foreach($name in $names){$files.Add((Join-Path $target.Ui $name))}
+    # The diagnostic evaluator contains executable logic; translate only reviewed UI literals.
+    $files.Add((Join-Path $target.Root 'src/core/autodebug.js'))
     # src/core/manual.js contains executable matching rules and regexes; never patch it as text.
     $changed=0
     try {
@@ -240,6 +244,11 @@ function Apply {
                 # Main process contains internal protocol/configuration strings too.
                 # Only replace reviewed, user-visible menu/dialog phrases here.
                 $fileKeys=@($mainAllow | Where-Object { $translations.ContainsKey([string]$_) })
+            }
+            if($name -eq 'autodebug.js'){
+                # The diagnostic evaluator is executable core code. Never apply the broad dictionary.
+                # Only the separately reviewed category labels, issue titles, hints and detail templates are eligible.
+                $fileKeys=@($autoDebugAllow | Where-Object { $translations.ContainsKey([string]$_) })
             }
             foreach($key in $fileKeys){if($updated.Contains($key)){$count+=([regex]::Matches($updated,[regex]::Escape($key))).Count;$updated=$updated.Replace($key,$translations[$key])}}
             if($name -in @('style.css','theme.css','shell.css','splash.css')){$updated=Rtl $updated}
