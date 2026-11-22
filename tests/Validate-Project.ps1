@@ -368,9 +368,9 @@ foreach ($key in @('设置 → 显示与窗口 → 自动全屏（配合"强制�
 
 # Hebrew document metadata must be applied to all HTML surfaces, including the app shell and splash screen.
 $scriptSource = Get-Content -LiteralPath $script -Raw -Encoding UTF8
-if ($scriptSource -notmatch "index\\.html','shell\\.html','manual\\.html','splash\\.html") { throw 'HTML language metadata coverage is incomplete.' }
+if ($scriptSource -notmatch "index\.html','shell\.html','manual\.html','splash\.html") { throw 'HTML language metadata coverage is incomplete.' }
 if ($scriptSource -notmatch '<html lang="he" dir="rtl">') { throw 'Hebrew HTML language/direction metadata is missing.' }
-if ($scriptSource -notmatch '\\[regex\\]::Replace') { throw 'HTML metadata replacement must be explicit and bounded.' }
+if ($scriptSource -notmatch '\[regex\]::Replace') { throw 'HTML metadata replacement must be explicit and bounded.' }
 
 # Main UI guidance and splash-screen translations added in batch 153.
 $uiGuidance = @(
