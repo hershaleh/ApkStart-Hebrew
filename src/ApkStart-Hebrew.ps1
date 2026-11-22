@@ -142,10 +142,76 @@ function Select-DetectedInstall([string[]]$targets) {
     return $null
 }
 
+function Get-BackupHistory {
+    $backupsRoot=Join-Path $stateDir 'Backups'
+    $items=New-Object System.Collections.Generic.List[object]
+    if(-not (Test-Path -LiteralPath $backupsRoot -PathType Container)){return @()}
+    foreach($folder in (Get-ChildItem -LiteralPath $backupsRoot -Directory -ErrorAction SilentlyContinue)){
+        $manifestPath=Join-Path $folder.FullName 'manifest.json'
+        try {
+            if(-not (Test-Path -LiteralPath $manifestPath -PathType Leaf)){continue}
+            $manifestFull=Get-FullPath $manifestPath
+            if(-not (Test-PathWithin $manifestFull $backupsRoot) -or (Split-Path -Leaf $manifestFull) -cne 'manifest.json'){continue}
+            $m=Get-Content -LiteralPath $manifestFull -Raw -Encoding UTF8 | ConvertFrom-Json
+            if([int]$m.Schema -ne 1 -or [string]::IsNullOrWhiteSpace([string]$m.TargetRoot) -or @($m.Files).Count -eq 0){continue}
+            $targetRoot=Get-FullPath ([string]$m.TargetRoot)
+            if(-not (Test-Path -LiteralPath $targetRoot -PathType Container)){continue}
+            $backupRoot=Get-FullPath $folder.FullName
+            if(-not (Test-PathWithin $backupRoot $backupsRoot)){continue}
+            $backupFiles=Join-Path $backupRoot 'files'
+            $seen=@{};$valid=$true
+            foreach($entry in $m.Files){
+                $relative=Get-SafeRelativePath ([string]$entry.RelativePath)
+                $key=$relative.ToLowerInvariant()
+                if($seen.ContainsKey($key)){$valid=$false;break}
+                $seen[$key]=$true
+                $backupPath=Join-Path $backupFiles $relative
+                if(-not (Test-PathWithin $backupPath $backupFiles) -or -not (Test-Path -LiteralPath $backupPath -PathType Leaf)){$valid=$false;break}
+                if(-not [string]::IsNullOrWhiteSpace([string]$entry.BackupHash) -and (HashFile $backupPath) -ne [string]$entry.BackupHash){$valid=$false;break}
+                if([string]::IsNullOrWhiteSpace([string]$entry.PatchedHash)){$valid=$false;break}
+            }
+            if($valid){
+                $items.Add([pscustomobject]@{
+                    ManifestPath=$manifestFull
+                    TargetRoot=$targetRoot
+                    Version=[string]$m.Version
+                    FileCount=@($m.Files).Count
+                    Created=$folder.LastWriteTime
+                    Display=($folder.LastWriteTime.ToString('dd/MM/yyyy HH:mm:ss')+' | גרסה '+[string]$m.Version+' | '+@($m.Files).Count+' קבצים | '+$targetRoot)
+                })
+            }
+        } catch {
+            # A damaged or incomplete backup is intentionally omitted from the selectable history.
+            continue
+        }
+    }
+    return @($items | Sort-Object Created -Descending)
+}
+function Select-BackupManifest {
+    $history=@(Get-BackupHistory)
+    if($history.Count -eq 0){
+        [Windows.Forms.MessageBox]::Show('לא נמצאו גיבויים תקינים לבחירה.','היסטוריית גיבויים') | Out-Null
+        return $null
+    }
+    $dialog=New-Object Windows.Forms.Form
+    $dialog.Text='היסטוריית גיבויים';$dialog.Size=New-Object Drawing.Size(820,360);$dialog.MinimumSize=New-Object Drawing.Size(700,300)
+    $dialog.StartPosition='CenterParent';$dialog.RightToLeft='Yes';$dialog.RightToLeftLayout=$true
+    $label=New-Object Windows.Forms.Label;$label.Text='בחר גיבוי לשחזור. גיבויים פגומים או חלקיים אינם מוצגים:';$label.AutoSize=$true;$label.Location=New-Object Drawing.Point(16,14);$dialog.Controls.Add($label)
+    $list=New-Object Windows.Forms.ListBox;$list.Location=New-Object Drawing.Point(16,42);$list.Size=New-Object Drawing.Size(770,220);$list.Anchor='Top,Bottom,Left,Right';$list.HorizontalScrollbar=$true
+    foreach($item in $history){[void]$list.Items.Add($item.Display)}
+    $list.SelectedIndex=0;$dialog.Controls.Add($list)
+    $hint=New-Object Windows.Forms.Label;$hint.Text='בשחזור מגיבוי ישן, קבצים ששונו מאז לא יידרסו ועלולים להידלג.';$hint.AutoSize=$true;$hint.Location=New-Object Drawing.Point(16,270);$hint.Anchor='Bottom,Left';$hint.ForeColor=[Drawing.Color]::DarkGoldenrod;$dialog.Controls.Add($hint)
+    $ok=New-Object Windows.Forms.Button;$ok.Text='שחזר גיבוי נבחר';$ok.DialogResult=[Windows.Forms.DialogResult]::OK;$ok.Location=New-Object Drawing.Point(540,295);$ok.Size=New-Object Drawing.Size(140,30);$ok.Anchor='Bottom,Right';$dialog.Controls.Add($ok)
+    $cancel=New-Object Windows.Forms.Button;$cancel.Text='ביטול';$cancel.DialogResult=[Windows.Forms.DialogResult]::Cancel;$cancel.Location=New-Object Drawing.Point(690,295);$cancel.Size=New-Object Drawing.Size(95,30);$cancel.Anchor='Bottom,Right';$dialog.Controls.Add($cancel)
+    $dialog.AcceptButton=$ok;$dialog.CancelButton=$cancel
+    if($dialog.ShowDialog($form) -eq [Windows.Forms.DialogResult]::OK -and $list.SelectedIndex -ge 0){return [string]$history[$list.SelectedIndex].ManifestPath}
+    return $null
+}
+
 function Update-ActionState {
     $isSupported=($null -ne $script:Target -and $script:Target.Status -eq 'Supported')
     if($apply){$apply.Enabled=$isSupported}
-    if($restore){$restore.Enabled=(Test-Path -LiteralPath $stateFile -PathType Leaf)}
+    if($restore){$restore.Enabled=(@(Get-BackupHistory).Count -gt 0)}
 }
 function Scan {
     $target=Resolve-Target $pathBox.Text
@@ -431,12 +497,11 @@ function Apply {
 }
 function Restore {
     if (Get-Process -Name 'ApkStart' -ErrorAction SilentlyContinue) { Log 'ApkStart עדיין פועל. סגור אותו לפני שחזור קבצים.' 'warning'; return }
-    if(!(Test-Path -LiteralPath $stateFile -PathType Leaf)){Log 'לא נמצא גיבוי אחרון.' 'warning';return}
     try{
-        $state=Get-Content -LiteralPath $stateFile -Raw -Encoding UTF8 | ConvertFrom-Json
-        if([string]::IsNullOrWhiteSpace([string]$state.ManifestPath)){throw 'קובץ מצב הגיבוי אינו מכיל נתיב מניפסט.'}
+        $chosenManifest=Select-BackupManifest
+        if([string]::IsNullOrWhiteSpace($chosenManifest)){Log 'בחירת הגיבוי בוטלה.' 'warning';return}
         $backupsRoot=Join-Path $stateDir 'Backups'
-        $manifestPath=Get-FullPath ([string]$state.ManifestPath)
+        $manifestPath=Get-FullPath $chosenManifest
         if(-not (Test-PathWithin $manifestPath $backupsRoot) -or (Split-Path -Leaf $manifestPath) -cne 'manifest.json'){throw 'נתיב המניפסט חורג מתיקיית הגיבויים.'}
         if(!(Test-Path -LiteralPath $manifestPath -PathType Leaf)){throw 'קובץ המניפסט חסר.'}
         $m=Get-Content -LiteralPath $manifestPath -Raw -Encoding UTF8 | ConvertFrom-Json
@@ -459,7 +524,7 @@ function Restore {
             if($seenPaths.ContainsKey($duplicateKey)){throw ('המניפסט מכיל קובץ כפול: '+$relative)}
             $seenPaths[$duplicateKey]=$true
         }
-        $confirmText='שחזור הגיבוי האחרון יחזיר את קובצי הממשק למצבם המקורי.'+[Environment]::NewLine+[Environment]::NewLine+'התקנה: '+$targetRoot+[Environment]::NewLine+'גרסה בעת הגיבוי: '+[string]$m.Version+[Environment]::NewLine+'מספר קבצים: '+@($m.Files).Count+[Environment]::NewLine+[Environment]::NewLine+'להמשיך?'
+        $confirmText='השחזור יחזיר את קובצי הממשק למצבם המקורי כפי שנשמרו בגיבוי שנבחר.'+[Environment]::NewLine+[Environment]::NewLine+'התקנה: '+$targetRoot+[Environment]::NewLine+'גרסה בעת הגיבוי: '+[string]$m.Version+[Environment]::NewLine+'מספר קבצים: '+@($m.Files).Count+[Environment]::NewLine+[Environment]::NewLine+'להמשיך?'
         if([Windows.Forms.MessageBox]::Show($confirmText,'אישור שחזור',[Windows.Forms.MessageBoxButtons]::YesNo,[Windows.Forms.MessageBoxIcon]::Warning) -ne [Windows.Forms.DialogResult]::Yes){Log 'השחזור בוטל.' 'warning';return}
         $ok=0;$skip=0
         foreach($entry in $m.Files){
@@ -475,7 +540,7 @@ function Restore {
             $ok++
         }
         Log ("שוחזרו "+$ok+" קבצים; דולגו "+$skip+".") 'success'
-        if($skip -eq 0){Remove-Item -LiteralPath $stateFile -Force}
+        if($skip -eq 0 -and (Test-Path -LiteralPath $stateFile -PathType Leaf)){$active=Get-Content -LiteralPath $stateFile -Raw -Encoding UTF8 | ConvertFrom-Json;if([string]::Equals([string]$active.ManifestPath,$manifestPath,[StringComparison]::OrdinalIgnoreCase)){Remove-Item -LiteralPath $stateFile -Force}}
         Update-ActionState
     }catch{Log ('השחזור נכשל: '+$_.Exception.Message) 'error';Update-ActionState}
 }
@@ -495,7 +560,7 @@ $statusLabel=New-Object Windows.Forms.Label;$statusLabel.Text='טרם בוצעה
 $versionLabel=New-Object Windows.Forms.Label;$versionLabel.Text='גרסה: —';$versionLabel.AutoSize=$true;$versionLabel.Location=New-Object Drawing.Point(22,108);$main.Controls.Add($versionLabel)
 $scan=New-Object Windows.Forms.Button;$scan.Text='סריקה';$scan.Location=New-Object Drawing.Point(22,140);$scan.Size=New-Object Drawing.Size(100,36);$main.Controls.Add($scan)
 $apply=New-Object Windows.Forms.Button;$apply.Text='החלת עברית';$apply.Enabled=$false;$apply.Location=New-Object Drawing.Point(132,140);$apply.Size=New-Object Drawing.Size(130,36);$apply.BackColor=[Drawing.Color]::FromArgb(16,130,91);$apply.ForeColor=[Drawing.Color]::White;$apply.FlatStyle='Flat';$main.Controls.Add($apply)
-$restore=New-Object Windows.Forms.Button;$restore.Text='שחזור המקור';$restore.Enabled=(Test-Path -LiteralPath $stateFile -PathType Leaf);$restore.Location=New-Object Drawing.Point(272,140);$restore.Size=New-Object Drawing.Size(120,36);$main.Controls.Add($restore)
+$restore=New-Object Windows.Forms.Button;$restore.Text='היסטוריית גיבויים…';$restore.Enabled=(@(Get-BackupHistory).Count -gt 0);$restore.Location=New-Object Drawing.Point(272,140);$restore.Size=New-Object Drawing.Size(150,36);$main.Controls.Add($restore)
 $note=New-Object Windows.Forms.Label;$note.Text='התרגום עדיין חלקי. MSIX ו-app.asar מזוהים אך אינם משתנים בשלב זה.';$note.AutoSize=$false;$note.Size=New-Object Drawing.Size(750,32);$note.Location=New-Object Drawing.Point(22,190);$note.ForeColor=[Drawing.Color]::DarkGoldenrod;$main.Controls.Add($note)
 $logTitle=New-Object Windows.Forms.Label;$logTitle.Text='יומן פעולות';$logTitle.AutoSize=$true;$logTitle.Location=New-Object Drawing.Point(22,226);$main.Controls.Add($logTitle)
 $logBox=New-Object Windows.Forms.RichTextBox;$logBox.Location=New-Object Drawing.Point(22,251);$logBox.Size=New-Object Drawing.Size(756,290);$logBox.Anchor='Top,Bottom,Left,Right';$logBox.ReadOnly=$true;$logBox.BackColor=[Drawing.Color]::White;$logBox.Font=New-Object Drawing.Font('Consolas',9);$logBox.RightToLeft='Yes';$main.Controls.Add($logBox)
