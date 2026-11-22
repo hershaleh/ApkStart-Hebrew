@@ -443,6 +443,12 @@ function Restore {
         if([int]$m.Schema -ne 1 -or [string]::IsNullOrWhiteSpace([string]$m.TargetRoot) -or @($m.Files).Count -eq 0){throw 'מבנה המניפסט אינו נתמך או אינו שלם.'}
         $targetRoot=Get-FullPath ([string]$m.TargetRoot)
         if(!(Test-Path -LiteralPath $targetRoot -PathType Container) -or !(Test-Path -LiteralPath (Join-Path $targetRoot 'src/ui/index.html') -PathType Leaf) -or !(Test-Path -LiteralPath (Join-Path $targetRoot 'src/ui/app.js') -PathType Leaf)){throw 'תיקיית ההתקנה המקורית אינה קיימת או שמבנה ApkStart אינו מזוהה.'}
+        # A single global "last backup" must never silently restore another installation.
+        $selected=Resolve-Target $pathBox.Text
+        if(!$selected -or $selected.Status -in @('InvalidPath','Unknown','MSIX','ASAR')){throw 'בחר תחילה את תיקיית ApkStart שעבורה נוצר הגיבוי, ולחץ על סריקה.'}
+        if(-not [string]::Equals((Get-FullPath $selected.Root).TrimEnd('\\'),$targetRoot.TrimEnd('\\'),[StringComparison]::OrdinalIgnoreCase)){
+            throw ('הגיבוי האחרון שייך להתקנה אחרת: '+$targetRoot+'. בחר את ההתקנה הנכונה ולחץ על שחזור מחדש.')
+        }
         $backupRoot=Get-FullPath (Split-Path -Parent $manifestPath)
         if(-not (Test-PathWithin $backupRoot $backupsRoot) -or (Join-Path $backupRoot 'manifest.json') -cne $manifestPath){throw 'תיקיית הגיבוי אינה תקינה.'}
         $backupFiles=Join-Path $backupRoot 'files'
@@ -453,6 +459,8 @@ function Restore {
             if($seenPaths.ContainsKey($duplicateKey)){throw ('המניפסט מכיל קובץ כפול: '+$relative)}
             $seenPaths[$duplicateKey]=$true
         }
+        $confirmText='שחזור הגיבוי האחרון יחזיר את קובצי הממשק למצבם המקורי.'+[Environment]::NewLine+[Environment]::NewLine+'התקנה: '+$targetRoot+[Environment]::NewLine+'גרסה בעת הגיבוי: '+[string]$m.Version+[Environment]::NewLine+'מספר קבצים: '+@($m.Files).Count+[Environment]::NewLine+[Environment]::NewLine+'להמשיך?'
+        if([Windows.Forms.MessageBox]::Show($confirmText,'אישור שחזור',[Windows.Forms.MessageBoxButtons]::YesNo,[Windows.Forms.MessageBoxIcon]::Warning) -ne [Windows.Forms.DialogResult]::Yes){Log 'השחזור בוטל.' 'warning';return}
         $ok=0;$skip=0
         foreach($entry in $m.Files){
             $relative=Get-SafeRelativePath ([string]$entry.RelativePath)
@@ -468,7 +476,8 @@ function Restore {
         }
         Log ("שוחזרו "+$ok+" קבצים; דולגו "+$skip+".") 'success'
         if($skip -eq 0){Remove-Item -LiteralPath $stateFile -Force}
-    }catch{Log ('השחזור נכשל: '+$_.Exception.Message) 'error'}
+        Update-ActionState
+    }catch{Log ('השחזור נכשל: '+$_.Exception.Message) 'error';Update-ActionState}
 }
 
 $form=New-Object Windows.Forms.Form
