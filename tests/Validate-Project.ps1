@@ -84,12 +84,32 @@ foreach ($required in @(
     if (-not $source.Contains($required)) { throw "Restore target confirmation safeguard missing: $required" }
 }
 
+# Backup history must enumerate only valid, contained manifests, verify their stored copies,
+# sort newest first, and require an explicit selection before restoring an older snapshot.
+foreach ($required in @(
+    'function Get-BackupHistory',
+    'function Select-BackupManifest',
+    "Get-ChildItem -LiteralPath \$backupsRoot -Directory",
+    'Test-PathWithin \$manifestFull \$backupsRoot',
+    'Get-SafeRelativePath ([string]\$entry.RelativePath)',
+    '(HashFile \$backupPath) -ne [string]\$entry.BackupHash',
+    'Sort-Object Created -Descending',
+    'היסטוריית גיבויים',
+    'גיבויים פגומים או חלקיים אינם מוצגים',
+    'גיבוי ישן, קבצים ששונו מאז לא יידרסו',
+    '\$chosenManifest=Select-BackupManifest',
+    'היסטוריית גיבויים…'
+)) {
+    if (-not $source.Contains($required)) { throw "Backup history safeguard missing: $required" }
+}
+if ($source -match 'Remove-Item -LiteralPath \$backupRoot') { throw 'Backup history must never delete historical backup folders.' }
+
 # User-facing action gating: apply is disabled until a supported scan,
 # changing the path invalidates the previous scan, and restore follows backup availability.
 foreach ($required in @(
     'function Update-ActionState',
     '$apply.Enabled=$isSupported',
-    '$restore.Enabled=(Test-Path -LiteralPath $stateFile -PathType Leaf)',
+    '$restore.Enabled=(@(Get-BackupHistory).Count -gt 0)',
     '$script:Target=$null',
     'הנתיב השתנה — יש לבצע סריקה מחדש',
     'נדרשת בחירת תיקייה וסריקה',
