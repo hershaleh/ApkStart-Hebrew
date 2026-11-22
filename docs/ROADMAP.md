@@ -99,3 +99,9 @@
 ## Diagnostics, reports, tutorials, and runtime image
 - Added reviewed translations for local health checks, automatic diagnostics, issue categories, diagnostic reports, contextual tutorials, and Android system-image architecture.
 - Added validation for dictionary presence, Hebrew text, and dedicated manual allowlisting.
+
+
+## Final troubleshooting and compatibility coverage
+- Expanded remaining troubleshooting guidance for ARM translation-layer fallback, virtualization prerequisites, legacy-image compatibility, and Microsoft Store DLL diagnostics.
+- Added Hebrew text for the manual's final caveats, upgrade guidance, and version note.
+- Extended validation to require every phrase in the dictionary, verify Hebrew text, and confirm dedicated manual allowlisting.
