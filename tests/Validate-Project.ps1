@@ -107,7 +107,6 @@ foreach ($required in @(
     'function Restore-FileAtomic',
     '[IO.File]::Copy($source,$temp,$true)',
     '[IO.File]::Replace($temp,$destination,$null,$true)',
-    'Restore-FileAtomic $entry.BackupPath $file',
     'Restore-FileAtomic $entry.BackupPath $rollbackDest',
     'Restore-FileAtomic $backupPath $dest',
     '$seenPaths=@{}',
