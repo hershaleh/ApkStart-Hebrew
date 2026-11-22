@@ -89,7 +89,7 @@ foreach ($required in @(
 foreach ($required in @(
     'function Get-BackupHistory',
     'function Select-BackupManifest',
-    "Get-ChildItem -LiteralPath $backupsRoot -Directory",
+    'Get-ChildItem -LiteralPath $backupsRoot -Directory',
     'Test-PathWithin $manifestFull $backupsRoot',
     'Get-SafeRelativePath ([string]$entry.RelativePath)',
     '(HashFile $backupPath) -ne [string]$entry.BackupHash',
