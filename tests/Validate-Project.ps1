@@ -73,7 +73,7 @@ foreach ($required in @('Get-FileHash','APKSTART-HEBREW:RTL','app.asar','Windows
 # and require an explicit choice when multiple installations are detected.
 foreach ($required in @(
     "Status='InvalidPath'",
-    "Test-Path -LiteralPath \$path -PathType Container",
+    'Test-Path -LiteralPath $path -PathType Container',
     "resources/app/app.asar",
     'function Select-DetectedInstall',
     'נמצאו כמה התקנות',
@@ -92,7 +92,7 @@ foreach ($required in @(
     'Status=''Supported''',
     'index.html'',''app.js'',''main.js'',''style.css'',''theme.css',
     'גרסה לא מאומתת — ההחלה חסומה',
-    '$t.Status -in @(''Supported'',''UnsupportedVersion'',''UnsupportedStructure'')'
+    'Status -in @(''Supported'',''UnsupportedVersion'',''UnsupportedStructure'')'
 )) {
     if (-not $source.Contains($required)) { throw "Version compatibility safeguard missing: $required" }
 }
