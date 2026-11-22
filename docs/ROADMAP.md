@@ -94,3 +94,8 @@
 ## Settings, display, updates, and acceleration
 - Expanded the manual translation for settings categories and their contents, display orientation, update channels, incremental updates, and Windows virtualization acceleration.
 - Added dictionary, Hebrew-content, and allowlist assertions for all reviewed strings in this batch.
+
+
+## Diagnostics, reports, tutorials, and runtime image
+- Added reviewed translations for local health checks, automatic diagnostics, issue categories, diagnostic reports, contextual tutorials, and Android system-image architecture.
+- Added validation for dictionary presence, Hebrew text, and dedicated manual allowlisting.
