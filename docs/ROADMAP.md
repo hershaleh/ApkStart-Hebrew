@@ -64,3 +64,8 @@
 - Expanded the reviewed Hebrew coverage for sections 6.7 (audio troubleshooting) and 6.8 (Microsoft Store / DLL startup failures).
 - Added explicit tests requiring the new user-facing manual text to exist in the Hebrew dictionary and the dedicated manual allowlist.
 - Technical commands, DLL names, paths, and inline code remain outside broad replacement; only reviewed literal text nodes are eligible.
+
+
+## Startup troubleshooting coverage
+- Added reviewed Hebrew text for the startup/window-attachment guidance in section 6.5 and the startup error quick-reference table in section 6.6.
+- Extended validation to check each added phrase in the dictionary and the dedicated manual allowlist.
