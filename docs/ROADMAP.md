@@ -74,3 +74,8 @@
 ## System diagnostics and manual navigation
 - Added Hebrew coverage for system diagnostic categories, built-in manual navigation, and the user actions that require BIOS or Windows configuration.
 - Added explicit allowlist and Hebrew-text assertions for the new manual phrases.
+
+
+## Data directories and feedback guidance
+- Added Hebrew translations for the data-directory table, reset-data warning, diagnostic-report instructions, and manual print action.
+- Added validation that each phrase exists in the dictionary, is Hebrew, and is included in the dedicated manual allowlist.
