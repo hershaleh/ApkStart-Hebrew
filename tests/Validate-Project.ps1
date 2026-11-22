@@ -252,3 +252,10 @@ foreach ($key in @('用途','位置','展开后的系统镜像','应用图标','
     if ($translations[$key] -notmatch '[\u0590-\u05FF]') { throw "Data/help manual phrase has no Hebrew translation: $key" }
     if ($null -eq @($manualAllow | Where-Object { $_ -ceq $key })[0]) { throw "Data/help manual phrase is not allowlisted: $key" }
 }
+
+# Quick-start, file-sharing, and data-directory manual phrases must remain translated and allowlisted.
+foreach ($key in @('双击 .apk 即安装','：在资源管理器里注册文件关联后，双击 APK → 自动解析 → 安装 → 生成桌面图标。','每个应用一个桌面图标','：图标从 APK 内部离线提取，双击图标 = 直接进应用。','应用就是一个窗口','：原生渲染，全屏铺满屏幕高度并居中，窗口模式可拖动缩放，每个应用单独记忆尺寸。','：桌面 + 开始菜单（）双快捷方式。','： ↔ 安卓内  双向同步。','：不依赖你机器上装的 MuMu / 雷电 / WSA 等任何模拟器。','第二个应用几乎瞬时启动','本机  与安卓内  秒级双向同步。 入口：设置 → 集成与文件 → 文件互通（可"立即同步"或"打开目录"）。','本手册对应 v0.6.3，随版本更新。若界面文案与此处略有出入，以软件内实际显示为准。','运行时（adb / emulator / 镜像）','随包内置，或 （轻量版）','AVD / 已装应用 / 快照','运行日志 / 诊断报告','：设置 → 诊断与修复 → 导出诊断报告；','：如"商店版 0.6.3"或"完整便携版 0.6.3"。')) {
+    if ($null -eq $translations.PSObject.Properties[$key]) { throw "Quick-start/data manual translation missing: $key" }
+    if ($translations[$key] -notmatch '[\u0590-\u05FF]') { throw "Quick-start/data manual phrase has no Hebrew translation: $key" }
+    if ($null -eq @($manualAllow | Where-Object { $_ -ceq $key })[0]) { throw "Quick-start/data manual phrase is not allowlisted: $key" }
+}
