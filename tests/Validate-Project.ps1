@@ -48,6 +48,12 @@ foreach ($key in @('拖入 APK 文件，或点击选择',' · 独立窗口已启
     if ($translations[$key] -notmatch '[\u0590-\u05FF]') { throw "Renderer environment phrase has no Hebrew translation: $key" }
 }
 
+# Reviewed main-window settings/status labels and help text.
+foreach ($key in @('正在检查…','专用 adb 服务端口 5044','看不到这台安卓设备 —— 这是刻意的隔离。想连的话用','重置安卓数据','小 · 720 × 1280','中 · 900 × 1600','大 · 1080 × 1920','超大 · 1440 × 2560','窗口模式下可拖动边框任意缩放；这里调的是 Android 内部渲染尺寸，越小越省性能。','流畅 · 540 × 960','均衡 · 720 × 1280','高清 · 1080 × 1920','正在读取数据分区…','English（镜像原生）','容器细节（高级）','轻量容器','正在读取驱动…','刷新','一键流畅优化','安卓虚拟机内部的无线网，关掉可省一点 CPU。','飞行模式','扫码关注公众号','Windows 原生多窗口 · 多开（实验性）','1 · 平衡（推荐）','2 · 多开更稳','3 · 最多并存')) {
+    if ($null -eq $translations.PSObject.Properties[$key]) { throw "Main-window translation missing: $key" }
+    if ($translations[$key] -notmatch '[\u0590-\u05FF]') { throw "Main-window translation has no Hebrew text: $key" }
+}
+
 foreach ($key in @('正在运行','停止运行时',' · 已是精简状态')) {
     if ($null -eq $translations.PSObject.Properties[$key]) { throw "Dynamic card/runtime translation missing: $key" }
     if ($null -eq @($appAllow | Where-Object { $_ -ceq $key })[0]) { throw "Dynamic card/runtime string is not allowlisted: $key" }
