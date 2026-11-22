@@ -89,7 +89,7 @@ foreach ($key in $autoDebugAllow) {
     if ($null -eq $translations.PSObject.Properties[[string]$key]) { throw "Automatic-diagnostics allowlist key is missing from dictionary: $key" }
     if ($translations[[string]$key] -notmatch '[\u0590-\u05FF]') { throw "Automatic-diagnostics phrase has no Hebrew translation: $key" }
 }
-if (-not $source.Contains("Join-Path $target.Root 'src/core/autodebug.js'") -or -not $source.Contains('autodebug-allowlist.json') -or -not $source.Contains("'autodebug.js'") -or -not $source.Contains('complete JavaScript string/template literals only')) {
+if (-not $source.Contains('Join-Path $target.Root ''src/core/autodebug.js''') -or -not $source.Contains('autodebug-allowlist.json') -or -not $source.Contains("'autodebug.js'") -or -not $source.Contains('complete JavaScript string/template literals only')) {
     throw 'Diagnostic engine translations must use their dedicated reviewed allowlist.'
 }
 
