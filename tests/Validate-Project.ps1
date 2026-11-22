@@ -76,7 +76,8 @@ foreach ($required in @(
     'Status=''UnsupportedVersion''',
     'Status=''Supported''',
     'index.html'',''app.js'',''main.js'',''style.css'',''theme.css',
-    'גרסה לא מאומתת — ההחלה חסומה'
+    'גרסה לא מאומתת — ההחלה חסומה',
+    "`$t.Status -in @('Supported','UnsupportedVersion')"
 )) {
     if (-not $source.Contains($required)) { throw "Version compatibility safeguard missing: $required" }
 }
