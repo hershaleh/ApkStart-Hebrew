@@ -577,3 +577,37 @@ foreach ($key in $uiGuidance) {
     if ($null -eq $matchedKey) { throw "Main UI translation missing: $normalizedKey" }
     if ($translations[$matchedKey] -notmatch '[\u0590-\u05FF]') { throw "Main UI phrase has no Hebrew translation: $normalizedKey" }
 }
+
+
+# ZIP backup interchange: export only validated snapshots; import with strict path,
+# entry-count and expansion limits, exact manifest membership, and non-overwrite semantics.
+foreach ($required in @(
+    'function Select-BackupForExport',
+    'function Export-BackupZip',
+    'function Import-BackupZip',
+    'SaveFileDialog',
+    'OpenFileDialog',
+    'ZipArchiveMode]::Create',
+    'ZipFile]::OpenRead',
+    '500MB',
+    '2001',
+    '1GB',
+    'manifest.json',
+    'Get-SafeRelativePath ($name.Substring(6))',
+    'ExternalAttributes',
+    '0xA000',
+    'תוכן ה-ZIP אינו תואם לרשימת הקבצים שבמניפסט',
+    'Test-PathWithin $destination $stage',
+    'FileMode]::CreateNew',
+    'Get-BackupHistory | Where-Object',
+    '[IO.Directory]::Move($stage,$final)',
+    'קובץ היעד כבר קיים',
+    'לא החליף גיבויים קיימים',
+    'Remove-Item -LiteralPath $stage -Recurse -Force',
+    'ייצוא ZIP…',
+    'ייבוא ZIP…'
+)) {
+    if (-not $source.Contains($required)) { throw "ZIP backup interchange safeguard missing: $required" }
+}
+if ($source -match 'ExtractToDirectory') { throw 'ZIP import must not use unchecked ExtractToDirectory.' }
+if ($source -match 'Remove-Item -LiteralPath \$backupRoot') { throw 'ZIP import/export must never delete existing backup folders.' }
