@@ -197,7 +197,7 @@ foreach ($required in @(
     '[IO.File]::Copy($source,$temp,$true)',
     '[IO.File]::Replace($temp,$destination,$null,$true)',
     'Restore-FileAtomic $entry.BackupPath $rollbackDest',
-    'Restore-FileAtomic $backupPath $dest',
+    'Restore-FileAtomic $item.BackupPath $item.Destination',
     '$seenPaths=@{}',
     'המניפסט מכיל קובץ כפול'
 )) {
