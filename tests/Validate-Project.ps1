@@ -253,7 +253,7 @@ $tokens = $null
 $errors = $null
 [System.Management.Automation.Language.Parser]::ParseFile($script, [ref]$tokens, [ref]$errors) | Out-Null
 if ($errors.Count -gt 0) {
-    $errors | ForEach-Object { Write-Error $_.Message }
+    $errors | ForEach-Object { Write-Error ("Line $($_.Extent.StartLineNumber), column $($_.Extent.StartColumnNumber): $($_.Message)") }
     throw 'PowerShell syntax validation failed.'
 }
 
