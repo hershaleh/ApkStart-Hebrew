@@ -143,6 +143,14 @@ foreach ($key in @('让安卓应用像 Windows 原生软件一样安装、出现
     if ($translations[$key] -notmatch '[\u0590-\u05FF]') { throw "Manual paragraph has no Hebrew text: $key" }
 }
 
+
+# Additional user-facing manual instructions and troubleshooting rows.
+foreach ($key in @('支持   /   拆分包（自动用  ）。装完自动生成桌面 + 开始菜单快捷方式。','只有"面板方向和应用方向不一致"的那一次才会重启运行时（约 40 秒，标题栏会给提示），同方向的应用之后都秒进。','本机   与安卓内   秒级双向同步。 入口：设置 → 集成与文件 → 文件互通（可"立即同步"或"打开目录"）。','Windows 原生多窗口多开（实验性）、后台保留数','设置 → 更新与关于 → 检查更新，或托盘右键 → 检查更新。更新链路现测现选最快的源（GitHub / Gitee / 镜像），分块并行下载，失败自动换源。更新不会丢运行时、已装应用和快照。','说明：只有用「检查更新」从 GitHub / Gitee 装便携版的用户走增量；从微软商店装的走 Store 通道。增量对已装应用、安卓数据、运行时和快照都没有影响。','镜像缺失 / 损坏 / 与旧用户数据不兼容 → 开机失败、卡在引导、反复重启。','在翻本手册之前，先让软件自己查一遍——大多数问题它能自动修。','位置：设置 → 诊断与修复 →「自动检测 · 智能诊断」','两条原则：探测失败不会被当成问题（拿不到状态就报"不知道"，绝不瞎报）；同一个老问题不重复打扰。','自动检测/修复也会把教程送到你面前：','自动检测发现问题时，问题条目右侧有「教程」按钮，点开直达对应章节；','：这通常是"慢"，不是"打不开"。ApkStart 已自动回退软件模拟。想要流畅才需要开加速。','ApkStart 会把英文原始错误翻译成中文。对照下表处理：','应用要求更高 Android 版本','APK 损坏或非正规包，重新获取安装包','不能降级覆盖，装更高版本或先卸载','应用依赖特定厂商环境，模拟器无法提供','系统内部错误（多为空间不足或没开机完成）','看屏幕上有没有一个模拟器窗口弹着','「一律允许使用这台计算机进行调试」','退出其它模拟器（夜神/MuMu/蓝叠）或重启','更新显卡驱动；或写兼容补丁；仍不行导出诊断报告')) {
+    if ($null -eq $translations.PSObject.Properties[$key]) { throw "Manual translation missing: $key" }
+    if ($null -eq @($manualAllow | Where-Object { $_ -ceq $key })[0]) { throw "Manual text not allowlisted: $key" }
+    if ($translations[$key] -notmatch '[\u0590-\u05FF]') { throw "Manual translation is not Hebrew: $key" }
+}
+
 # Manual body coverage: verify real paragraph-level phrases, not only navigation labels.
 foreach ($key in @('本项目为早期版本，作者业余时间维护，开源免费、无广告。遇到问题是正常的，本手册就是为此准备的。','首次启动慢是正常的，属"一次性成本"。之后再用就是秒进。','模拟器要跑得快，需要 CPU 虚拟化加速。Windows 上只有两条路：','如果系统本身也没声音，先去解决 Windows 音频；只有 ApkStart 里的应用没声才按下面查。','按顺序排查')) {
     if ($null -eq $translations.PSObject.Properties[$key]) { throw "Manual body translation missing: $key" }
