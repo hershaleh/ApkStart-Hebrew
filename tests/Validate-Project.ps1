@@ -69,6 +69,21 @@ foreach ($required in @('Get-FileHash','APKSTART-HEBREW:RTL','app.asar','Windows
     }
 }
 
+# Version compatibility: only the source-reviewed ApkStart release may be patched.
+foreach ($required in @(
+    "$verifiedVersion='0.6.3'",
+    "if($version -eq $verifiedVersion)",
+    "Status='UnsupportedVersion'",
+    "Status='Supported'",
+    "index.html','app.js','main.js','style.css','theme.css",
+    "גרסה לא מאומתת — ההחלה חסומה"
+)) {
+    if (-not $source.Contains($required)) { throw "Version compatibility safeguard missing: $required" }
+}
+if ($source -notmatch "Status='UnsupportedVersion'.*לא יבוצעו שינויים") {
+    throw 'Unverified ApkStart versions must be blocked with a clear warning.'
+}
+
 # Backup/restore integrity: validate path containment, allowlisted targets, backup hashes,
 # and the patched-file hash before any restore or automatic rollback.
 foreach ($required in @(
