@@ -501,7 +501,7 @@ function Show-RestorePreview {
     $skipped=$Items.Count-$ready
     $dialog=New-Object Windows.Forms.Form
     $dialog.Text='בדיקת שחזור לפני אישור'
-    $dialog.Size=New-Object Drawing.Size(850,520)
+    $dialog.Size=New-Object Drawing.Size(850,540)
     $dialog.MinimumSize=New-Object Drawing.Size(720,420)
     $dialog.StartPosition='CenterParent'
     $dialog.RightToLeft='Yes';$dialog.RightToLeftLayout=$true
