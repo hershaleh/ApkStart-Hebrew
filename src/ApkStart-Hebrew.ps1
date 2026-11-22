@@ -1,4 +1,5 @@
 #requires -Version 5.1
+param([string]$InitialTargetPath)
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
@@ -752,5 +753,5 @@ $pathBox.Add_TextChanged({$script:Target=$null;$statusLabel.Text='הנתיב ה�
 $scan.Add_Click({Scan | Out-Null});$apply.Add_Click({Apply});$restore.Add_Click({Restore})
 $exportBackup.Add_Click({try{Export-BackupZip}catch{Log ('ייצוא נכשל: '+$_.Exception.Message) 'error';[Windows.Forms.MessageBox]::Show($_.Exception.Message,'ייצוא נכשל') | Out-Null};Update-ActionState})
 $importBackup.Add_Click({try{Import-BackupZip}catch{Log ('ייבוא נכשל: '+$_.Exception.Message) 'error';[Windows.Forms.MessageBox]::Show($_.Exception.Message,'ייבוא נכשל') | Out-Null};Update-ActionState})
-$form.Add_Shown({Update-ActionState;Log 'ברוך הבא. בחר התקנה ובצע סריקה. כפתור ההחלה יופעל רק להתקנה תואמת.';$found=@(Detect-Targets | Where-Object { (Resolve-Target $_).Status -in @('Supported','UnsupportedVersion','UnsupportedStructure','ASAR') });if($found.Count -gt 0){$chosen=Select-DetectedInstall $found;if($chosen){$pathBox.Text=$chosen;Scan | Out-Null}}})
+$form.Add_Shown({Update-ActionState;Log 'ברוך הבא. בחר התקנה ובצע סריקה. כפתור ההחלה יופעל רק להתקנה תואמת.';if(-not [string]::IsNullOrWhiteSpace($InitialTargetPath)){$pathBox.Text=$InitialTargetPath;Scan | Out-Null}else{$found=@(Detect-Targets | Where-Object { (Resolve-Target $_).Status -in @('Supported','UnsupportedVersion','UnsupportedStructure','ASAR') });if($found.Count -gt 0){$chosen=Select-DetectedInstall $found;if($chosen){$pathBox.Text=$chosen;Scan | Out-Null}}}})
 [void]$form.ShowDialog()
