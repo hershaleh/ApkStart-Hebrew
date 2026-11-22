@@ -8,6 +8,7 @@
 - [x] אימות נתיבי מניפסט וגיבוי, הגבלת נתיבי יעד לרשימת קובצי ממשק, ואימות SHA-256 של עותק הגיבוי.
 - [x] שמירה על תאימות לשחזור מגיבויים ישנים, תוך התרעה על היעדר טביעת גיבוי.
 - [x] היסטוריית גיבויים גרפית: בחירת נקודת שחזור, סינון גיבויים פגומים ושמירת כל ההיסטוריה.
+- [x] תצוגה מקדימה לפני שחזור: פירוט קבצים מוכנים/מדולגים ובדיקת SHA-256 חוזרת לפני כל כתיבה.
 - [ ] בדיקה מעשית של שחזור מלא, שינוי ידני של קובץ, קובץ גיבוי פגום וכשל באמצע ההחלה.
 - [x] חסימת שינוי MSIX ו-ASAR בשלב זה.
 - [x] בדיקת תחביר PowerShell ותקינות JSON ב-GitHub Actions.
@@ -140,3 +141,10 @@
 - Invalid, incomplete, duplicate-path, missing-file, or hash-mismatched backup sets are excluded from the selectable history.
 - Restore remains bound to the original installation and still skips files changed since the selected snapshot; historical backups are retained.
 - Added static checks for history validation, ordering, explicit selection, and non-deletion of old backups.
+
+
+## Restore preflight preview
+- Added a pre-confirmation file-by-file preview that distinguishes restorable files from missing or changed targets and invalid backup copies.
+- Confirmation is disabled when no files are safe to restore.
+- SHA-256 and file-existence checks are repeated immediately before each atomic restore to catch changes after preview.
+- Added static validation for preview classifications and last-moment integrity checks.
