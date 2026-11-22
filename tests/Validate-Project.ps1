@@ -224,3 +224,10 @@ if ($source -notmatch "function RtlManual" -or $source -notmatch "APKSTART-HEBRE
 if ($source -notmatch 'function RtlShell' -or $source -notmatch 'APKSTART-HEBREW:SHELL-RTL' -or $source -notmatch "\$name -eq 'shell\.css'") {
     throw 'Standalone shell stylesheet must receive dedicated RTL alignment.'
 }
+
+# Audio and Store-build troubleshooting text: reviewed literal manual nodes must stay translated and allowlisted.
+foreach ($key in @('：安卓应用里视频、提示音完全没声；或 Windows 其它软件有声、只有 ApkStart 里的应用没声。','：如果系统本身也没声音，先去解决 Windows 音频；只有 ApkStart 里的应用没声才按下面查。','Windows 音量与输出设备','：点任务栏音量图标，确认没有静音、音量不为 0，输出设备选的是你正在用的耳机/音箱。打开「音量合成器」，看 ApkStart / 安卓运行时那一行是不是被单独静音或拉到 0。','：有些应用第一次进入会把媒体音量设成 0，在应用自己的设置或安卓侧音量键里调大。B 站/抖音等还可能在应用内单独关了自动播放声音。','ApkStart 的声音开关','Windows 音频服务','蓝牙耳机 / 多输出设备','：切到蓝牙耳机后 Windows 有时不会把已运行的程序迁过去。断开重连耳机，或重启一次安卓运行时。','：在「设置 → 诊断与修复 → 导出诊断报告」后反馈；报告会带上声音开关与音频服务状态，能直接定位到底是配置、系统服务还是应用本身的问题。','自动修复失败时，软件会自动打开这一节。如果你关掉了自动检测通知，也可以从自动检测问题条目的「教程」按钮或标题栏','确实缺少 VC++ 运行库','杀毒软件隔离了运行时文件','：运行时目录里的 dll 被隔离 / 删除，也会报这个码。把 ApkStart 的安装目录和运行时数据目录加入杀毒白名单，再重新安装一次。','看诊断是不是真的缺 VC++','确认没报 VC++、却仍失败 → 多半是商店版路径问题','：这是当前最可能的原因。依次试：','完全退出 ApkStart（托盘图标 → 退出），重新打开；','检查杀毒软件的「受控文件夹访问 / 勒索软件防护」，把 ApkStart 加入白名单后重启；','想拿到确切的失败 DLL 名','（进阶）：反馈问题时，最有价值的是告诉开发者到底缺的是哪个 dll。可在事件查看器 → Windows 日志 → 应用程序里找 ApkStart / emulator 的')) {
+    if ($null -eq $translations.PSObject.Properties[$key]) { throw "Audio/Store troubleshooting translation missing: $key" }
+    if ($translations[$key] -notmatch '[\u0590-\u05FF]') { throw "Audio/Store troubleshooting text has no Hebrew translation: $key" }
+    if ($null -eq @($manualAllow | Where-Object { $_ -ceq $key })[0]) { throw "Audio/Store troubleshooting text is not allowlisted: $key" }
+}
