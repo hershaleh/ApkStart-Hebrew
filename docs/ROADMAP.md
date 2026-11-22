@@ -7,6 +7,7 @@
 - [x] גיבוי מקדים ושחזור מותנה SHA-256.
 - [x] אימות נתיבי מניפסט וגיבוי, הגבלת נתיבי יעד לרשימת קובצי ממשק, ואימות SHA-256 של עותק הגיבוי.
 - [x] שמירה על תאימות לשחזור מגיבויים ישנים, תוך התרעה על היעדר טביעת גיבוי.
+- [x] היסטוריית גיבויים גרפית: בחירת נקודת שחזור, סינון גיבויים פגומים ושמירת כל ההיסטוריה.
 - [ ] בדיקה מעשית של שחזור מלא, שינוי ידני של קובץ, קובץ גיבוי פגום וכשל באמצע ההחלה.
 - [x] חסימת שינוי MSIX ו-ASAR בשלב זה.
 - [x] בדיקת תחביר PowerShell ותקינות JSON ב-GitHub Actions.
@@ -132,3 +133,10 @@
 ## Hebrew document metadata and secondary windows
 - The translation pass now sets `lang="he"` and `dir="rtl"` on the main UI, separate application shell, manual, and splash-screen HTML documents.
 - Added validation to ensure all four HTML surfaces receive the language and direction metadata; technical paths, URLs, and code retain the existing LTR exceptions.
+
+
+## Backup history selection
+- Added a graphical history picker showing backup time, ApkStart version, file count, and installation path.
+- Invalid, incomplete, duplicate-path, missing-file, or hash-mismatched backup sets are excluded from the selectable history.
+- Restore remains bound to the original installation and still skips files changed since the selected snapshot; historical backups are retained.
+- Added static checks for history validation, ordering, explicit selection, and non-deletion of old backups.
