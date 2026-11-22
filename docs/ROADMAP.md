@@ -69,3 +69,8 @@
 ## Startup troubleshooting coverage
 - Added reviewed Hebrew text for the startup/window-attachment guidance in section 6.5 and the startup error quick-reference table in section 6.6.
 - Extended validation to check each added phrase in the dictionary and the dedicated manual allowlist.
+
+
+## System diagnostics and manual navigation
+- Added Hebrew coverage for system diagnostic categories, built-in manual navigation, and the user actions that require BIOS or Windows configuration.
+- Added explicit allowlist and Hebrew-text assertions for the new manual phrases.
