@@ -17,6 +17,30 @@ function Log([string]$message,[string]$kind='info') {
     $logBox.AppendText(('['+(Get-Date -Format 'HH:mm:ss')+'] '+$message+[Environment]::NewLine))
     $logBox.SelectionColor=$logBox.ForeColor; $logBox.ScrollToCaret()
 }
+function Test-ReviewedStructure([string]$candidate,[string]$ui,[ref]$reason) {
+    # Reviewed 0.6.3 structural anchors survive Hebrew text replacement.
+    # They detect common same-version upstream layout/API changes.
+    $checks=@(
+        @{Path=(Join-Path $ui 'index.html');Anchors=@('id="btnManual"','id="btnSettings"','id="search"')},
+        @{Path=(Join-Path $ui 'app.js');Anchors=@('function visibleApps','function refreshStatus','const SETTINGS_CATS','const DEBUG_CATS')},
+        @{Path=(Join-Path $candidate 'src/main.js');Anchors=@("ipcMain.handle('app:info'","ipcMain.handle('apps:list'","ipcMain.handle('settings:get'")}
+    )
+    foreach($check in $checks){
+        if(-not (Test-Path -LiteralPath $check.Path -PathType Leaf)){
+            $reason.Value='חסר קובץ מבנה מרכזי: '+(Split-Path -Leaf $check.Path)
+            return $false
+        }
+        $content=[IO.File]::ReadAllText($check.Path,[Text.Encoding]::UTF8)
+        foreach($anchor in $check.Anchors){
+            if(-not $content.Contains($anchor)){
+                $reason.Value='מבנה הקובץ השתנה: '+(Split-Path -Leaf $check.Path)+'; חסר סימן מבני '+$anchor
+                return $false
+            }
+        }
+    }
+    $reason.Value=''
+    return $true
+}
 function Resolve-Target([string]$path) {
     if (!$path) { return $null }
     $path=[IO.Path]::GetFullPath($path.Trim().Trim('"'))
@@ -34,10 +58,14 @@ function Resolve-Target([string]$path) {
                 } catch {}
             }
             $verifiedVersion='0.6.3'
-            if($version -eq $verifiedVersion){
-                return [pscustomobject]@{Status='Supported';Root=$candidate;Ui=$ui;Version=$version;Message='נמצאה גרסה 0.6.3 שמבנה הממשק שלה נבדק.'}
+            if($version -ne $verifiedVersion){
+                return [pscustomobject]@{Status='UnsupportedVersion';Root=$candidate;Ui=$ui;Version=$version;Message=('נמצאה גרסה '+$version+', אך התרגום נבדק כרגע רק מול ApkStart '+$verifiedVersion+'. לא יבוצעו שינויים כדי למנוע פגיעה בגרסה אחרת.')}
             }
-            return [pscustomobject]@{Status='UnsupportedVersion';Root=$candidate;Ui=$ui;Version=$version;Message=('נמצאה גרסה '+$version+', אך התרגום נבדק כרגע רק מול ApkStart '+$verifiedVersion+'. לא יבוצעו שינויים כדי למנוע פגיעה בגרסה אחרת.')}
+            $structureReason=''
+            if(-not (Test-ReviewedStructure $candidate $ui ([ref]$structureReason))){
+                return [pscustomobject]@{Status='UnsupportedStructure';Root=$candidate;Ui=$ui;Version=$version;Message=('מספר הגרסה עדיין '+$verifiedVersion+', אך מבנה הקבצים שונה מהמבנה שנבדק. ייתכן שהותקן עדכון או build אחר. ההחלה חסומה. '+$structureReason)}
+            }
+            return [pscustomobject]@{Status='Supported';Root=$candidate;Ui=$ui;Version=$version;Message='נמצאה גרסה 0.6.3 עם מבנה ממשק תואם לסימנים שנבדקו.'}
         }
     }
     if ((Test-Path (Join-Path $path 'resources/app.asar')) -or (Test-Path (Join-Path $path 'app.asar'))) {
@@ -81,6 +109,7 @@ function Scan {
     $versionLabel.Text='גרסה: '+$target.Version
     if($target.Status -eq 'Supported'){$statusLabel.Text='נמצאה התקנה נתמכת';$statusLabel.ForeColor=[Drawing.Color]::DarkGreen;Log ($target.Message+' '+$target.Root) 'success'}
     elseif($target.Status -eq 'UnsupportedVersion'){$statusLabel.Text='גרסה לא מאומתת — ההחלה חסומה';$statusLabel.ForeColor=[Drawing.Color]::DarkGoldenrod;Log ($target.Message+' '+$target.Root) 'warning'}
+    elseif($target.Status -eq 'UnsupportedStructure'){$statusLabel.Text='מבנה השתנה — נדרשת בדיקה מחדש';$statusLabel.ForeColor=[Drawing.Color]::DarkGoldenrod;Log ($target.Message+' '+$target.Root) 'warning'}
     elseif($target.Status -eq 'ASAR'){$statusLabel.Text='נדרש טיפול ייעודי ב-ASAR';$statusLabel.ForeColor=[Drawing.Color]::DarkGoldenrod;Log $target.Message 'warning'}
     else{$statusLabel.Text='התקנה אינה נתמכת';$statusLabel.ForeColor=[Drawing.Color]::Firebrick;Log $target.Message 'error'}
     return $target
@@ -405,7 +434,7 @@ $note=New-Object Windows.Forms.Label;$note.Text='התרגום עדיין חלק�
 $logTitle=New-Object Windows.Forms.Label;$logTitle.Text='יומן פעולות';$logTitle.AutoSize=$true;$logTitle.Location=New-Object Drawing.Point(22,226);$main.Controls.Add($logTitle)
 $logBox=New-Object Windows.Forms.RichTextBox;$logBox.Location=New-Object Drawing.Point(22,251);$logBox.Size=New-Object Drawing.Size(756,290);$logBox.Anchor='Top,Bottom,Left,Right';$logBox.ReadOnly=$true;$logBox.BackColor=[Drawing.Color]::White;$logBox.Font=New-Object Drawing.Font('Consolas',9);$logBox.RightToLeft='Yes';$main.Controls.Add($logBox)
 $browse.Add_Click({$d=New-Object Windows.Forms.FolderBrowserDialog;$d.Description='בחר תיקיית ApkStart או resources/app';if($d.ShowDialog() -eq [Windows.Forms.DialogResult]::OK){$pathBox.Text=$d.SelectedPath;Scan | Out-Null}})
-$detect.Add_Click({foreach($p in (Detect-Targets)){$t=Resolve-Target $p;if($t.Status -in @('Supported','UnsupportedVersion')){$pathBox.Text=$p;Scan | Out-Null;return}};Log 'לא נמצאה התקנה מזוהה. בחר תיקייה ידנית.' 'warning'})
+$detect.Add_Click({foreach($p in (Detect-Targets)){$t=Resolve-Target $p;if($t.Status -in @('Supported','UnsupportedVersion','UnsupportedStructure')){$pathBox.Text=$p;Scan | Out-Null;return}};Log 'לא נמצאה התקנה מזוהה. בחר תיקייה ידנית.' 'warning'})
 $scan.Add_Click({Scan | Out-Null});$apply.Add_Click({Apply});$restore.Add_Click({Restore})
-$form.Add_Shown({Log 'ברוך הבא. סגור את ApkStart לפני החלה או שחזור.';foreach($p in (Detect-Targets)){$t=Resolve-Target $p;if($t.Status -in @('Supported','UnsupportedVersion')){$pathBox.Text=$p;Scan | Out-Null;break}}})
+$form.Add_Shown({Log 'ברוך הבא. סגור את ApkStart לפני החלה או שחזור.';foreach($p in (Detect-Targets)){$t=Resolve-Target $p;if($t.Status -in @('Supported','UnsupportedVersion','UnsupportedStructure')){$pathBox.Text=$p;Scan | Out-Null;break}}})
 [void]$form.ShowDialog()
