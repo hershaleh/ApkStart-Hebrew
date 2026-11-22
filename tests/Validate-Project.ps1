@@ -77,8 +77,8 @@ foreach ($required in @(
     'הגיבוי שנבחר שייך להתקנה אחרת',
     'OrdinalIgnoreCase',
     'בדיקת שחזור לפני אישור',
-    'גרסה בעת הגיבוי:',
-    'מספר קבצים:',
+    'גרסה בגיבוי:',
+    'סה״כ בגיבוי:',
     'Update-ActionState'
 )) {
     if (-not $source.Contains($required)) { throw "Restore target confirmation safeguard missing: $required" }
