@@ -23,10 +23,21 @@ function Resolve-Target([string]$path) {
     if ($path -match '(?i)\\WindowsApps\\') { return [pscustomobject]@{Status='MSIX';Root=$path;Ui=$null;Version='—';Message='זוהתה התקנת Microsoft Store / MSIX. חבילה חתומה לא תשונה.'} }
     foreach ($candidate in @($path,(Join-Path $path 'resources/app'),(Join-Path $path 'app'))) {
         $ui=Join-Path $candidate 'src/ui'
-        if ((Test-Path (Join-Path $ui 'index.html')) -and (Test-Path (Join-Path $ui 'app.js'))) {
+        $requiredFiles=@('index.html','app.js','main.js','style.css','theme.css')
+        $missing=@($requiredFiles | Where-Object { -not (Test-Path -LiteralPath (Join-Path $ui $_) -PathType Leaf) })
+        if($missing.Count -eq 0){
             $version='לא ידועה'; $pkg=Join-Path $candidate 'package.json'
-            if (Test-Path $pkg) { try { $version=(Get-Content $pkg -Raw -Encoding UTF8 | ConvertFrom-Json).version } catch {} }
-            return [pscustomobject]@{Status='Supported';Root=$candidate;Ui=$ui;Version=$version;Message='נמצאו קובצי ממשק פרוסים.'}
+            if(Test-Path -LiteralPath $pkg -PathType Leaf){
+                try {
+                    $parsed=Get-Content -LiteralPath $pkg -Raw -Encoding UTF8 | ConvertFrom-Json
+                    if($parsed.version){$version=([string]$parsed.version).Trim()}
+                } catch {}
+            }
+            $verifiedVersion='0.6.3'
+            if($version -eq $verifiedVersion){
+                return [pscustomobject]@{Status='Supported';Root=$candidate;Ui=$ui;Version=$version;Message='נמצאה גרסה 0.6.3 שמבנה הממשק שלה נבדק.'}
+            }
+            return [pscustomobject]@{Status='UnsupportedVersion';Root=$candidate;Ui=$ui;Version=$version;Message=('נמצאה גרסה '+$version+', אך התרגום נבדק כרגע רק מול ApkStart '+$verifiedVersion+'. לא יבוצעו שינויים כדי למנוע פגיעה בגרסה אחרת.')}
         }
     }
     if ((Test-Path (Join-Path $path 'resources/app.asar')) -or (Test-Path (Join-Path $path 'app.asar'))) {
@@ -69,6 +80,7 @@ function Scan {
     if(!$target){Log 'בחר תיקיית ApkStart.' 'warning';return $null}
     $versionLabel.Text='גרסה: '+$target.Version
     if($target.Status -eq 'Supported'){$statusLabel.Text='נמצאה התקנה נתמכת';$statusLabel.ForeColor=[Drawing.Color]::DarkGreen;Log ($target.Message+' '+$target.Root) 'success'}
+    elseif($target.Status -eq 'UnsupportedVersion'){$statusLabel.Text='גרסה לא מאומתת — ההחלה חסומה';$statusLabel.ForeColor=[Drawing.Color]::DarkGoldenrod;Log ($target.Message+' '+$target.Root) 'warning'}
     elseif($target.Status -eq 'ASAR'){$statusLabel.Text='נדרש טיפול ייעודי ב-ASAR';$statusLabel.ForeColor=[Drawing.Color]::DarkGoldenrod;Log $target.Message 'warning'}
     else{$statusLabel.Text='התקנה אינה נתמכת';$statusLabel.ForeColor=[Drawing.Color]::Firebrick;Log $target.Message 'error'}
     return $target
