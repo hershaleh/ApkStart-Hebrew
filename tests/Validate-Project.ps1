@@ -104,6 +104,30 @@ foreach ($required in @(
 }
 if ($source -match 'Remove-Item -LiteralPath $backupRoot') { throw 'Backup history must never delete historical backup folders.' }
 
+# Restore preview must classify every file before confirmation, then recheck hashes immediately before writing.
+foreach ($required in @(
+    'function Show-RestorePreview',
+    'בדיקת שחזור לפני אישור',
+    'ניתן לשחזר:',
+    'צפויים להידלג:',
+    'קובץ היעד חסר',
+    'קובץ הגיבוי חסר',
+    'עותק הגיבוי השתנה',
+    'קובץ היעד השתנה מאז ההחלה',
+    'מוכן לשחזור',
+    'Show-RestorePreview -Items @($preview)',
+    'לאחר בדיקת הקבצים',
+    'לאחר בדיקת הקדם',
+    'HashFile $item.Destination',
+    'HashFile $item.BackupPath',
+    'Restore-FileAtomic $item.BackupPath $item.Destination'
+)) {
+    if (-not $source.Contains($required)) { throw "Restore preview safeguard missing: $required" }
+}
+if ($source -notmatch 'Show-RestorePreview.*ready' -and -not $source.Contains('$ok.Enabled=($ready -gt 0)')) {
+    throw 'Restore confirmation must be disabled when no files are safe to restore.'
+}
+
 # User-facing action gating: apply is disabled until a supported scan,
 # changing the path invalidates the previous scan, and restore follows backup availability.
 foreach ($required in @(
