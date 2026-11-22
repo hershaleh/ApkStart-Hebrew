@@ -148,3 +148,11 @@
 - Confirmation is disabled when no files are safe to restore.
 - SHA-256 and file-existence checks are repeated immediately before each atomic restore to catch changes after preview.
 - Added static validation for preview classifications and last-moment integrity checks.
+
+
+## החלפת גיבויים בקובץ ZIP
+- [x] ייצוא גיבוי נבחר לקובץ ZIP עצמאי.
+- [x] ייבוא ZIP להיסטוריית הגיבויים בלי לדרוס גיבויים קיימים.
+- [x] בדיקת נתיבים, קישורים, כפילויות, מגבלות גודל ותוכן מדויק מול manifest לפני חילוץ.
+- [x] בדיקת תקינות הגיבוי וטביעות SHA-256 לאחר חילוץ לתיקיית ביניים.
+- [ ] בדיקה מעשית ב-Windows: ייצוא, מחיקת עותק בדיקה, ייבוא ושחזור מלא.
