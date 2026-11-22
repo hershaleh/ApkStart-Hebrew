@@ -327,6 +327,14 @@ $uiGuidance = @(
     '<li>完成后双击 APK 或桌面图标即可秒开应用</li>'
 )
 foreach ($key in $uiGuidance) {
-    if ($null -eq $translations.PSObject.Properties[$key]) { throw "Main UI translation missing: $key" }
-    if ($translations[$key] -notmatch '[\u0590-\u05FF]') { throw "Main UI phrase has no Hebrew translation: $key" }
+    $normalizedKey = [regex]::Replace([string]$key, '\s+', ' ').Trim()
+    $matchedKey = $null
+    foreach ($candidate in $translations.Keys) {
+        if ([regex]::Replace([string]$candidate, '\s+', ' ').Trim() -ceq $normalizedKey) {
+            $matchedKey = [string]$candidate
+            break
+        }
+    }
+    if ($null -eq $matchedKey) { throw "Main UI translation missing: $normalizedKey" }
+    if ($translations[$matchedKey] -notmatch '[\u0590-\u05FF]') { throw "Main UI phrase has no Hebrew translation: $normalizedKey" }
 }
