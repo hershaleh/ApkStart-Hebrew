@@ -187,7 +187,7 @@ foreach ($required in @(
     'function Test-PathWithin',
     'function Get-SafeRelativePath',
     'BackupHash=(HashFile $backupPath)',
-    'Get-FullPath ([string]$state.ManifestPath)',
+    'Get-FullPath $chosenManifest',
     'Test-PathWithin $manifestPath $backupsRoot',
     'Test-PathWithin $backupRoot $backupsRoot',
     'Test-PathWithin $dest $targetRoot',
