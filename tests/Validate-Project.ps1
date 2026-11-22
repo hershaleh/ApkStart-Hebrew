@@ -74,7 +74,7 @@ foreach ($required in @('Get-FileHash','APKSTART-HEBREW:RTL','app.asar','Windows
 foreach ($required in @(
     '$selected=Resolve-Target $pathBox.Text',
     'בחר תחילה את תיקיית ApkStart שעבורה נוצר הגיבוי',
-    'הגיבוי האחרון שייך להתקנה אחרת',
+    'הגיבוי שנבחר שייך להתקנה אחרת',
     'OrdinalIgnoreCase',
     'אישור שחזור',
     'גרסה בעת הגיבוי:',
@@ -89,20 +89,20 @@ foreach ($required in @(
 foreach ($required in @(
     'function Get-BackupHistory',
     'function Select-BackupManifest',
-    "Get-ChildItem -LiteralPath \$backupsRoot -Directory",
-    'Test-PathWithin \$manifestFull \$backupsRoot',
-    'Get-SafeRelativePath ([string]\$entry.RelativePath)',
-    '(HashFile \$backupPath) -ne [string]\$entry.BackupHash',
+    "Get-ChildItem -LiteralPath $backupsRoot -Directory",
+    'Test-PathWithin $manifestFull $backupsRoot',
+    'Get-SafeRelativePath ([string]$entry.RelativePath)',
+    '(HashFile $backupPath) -ne [string]$entry.BackupHash',
     'Sort-Object Created -Descending',
     'היסטוריית גיבויים',
     'גיבויים פגומים או חלקיים אינם מוצגים',
     'גיבוי ישן, קבצים ששונו מאז לא יידרסו',
-    '\$chosenManifest=Select-BackupManifest',
+    '$chosenManifest=Select-BackupManifest',
     'היסטוריית גיבויים…'
 )) {
     if (-not $source.Contains($required)) { throw "Backup history safeguard missing: $required" }
 }
-if ($source -match 'Remove-Item -LiteralPath \$backupRoot') { throw 'Backup history must never delete historical backup folders.' }
+if ($source -match 'Remove-Item -LiteralPath $backupRoot') { throw 'Backup history must never delete historical backup folders.' }
 
 # User-facing action gating: apply is disabled until a supported scan,
 # changing the path invalidates the previous scan, and restore follows backup availability.
