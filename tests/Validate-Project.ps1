@@ -611,3 +611,9 @@ foreach ($required in @(
 }
 if ($source -match 'ExtractToDirectory') { throw 'ZIP import must not use unchecked ExtractToDirectory.' }
 if ($source -match 'Remove-Item -LiteralPath \$backupRoot') { throw 'ZIP import/export must never delete existing backup folders.' }
+
+
+# Run real ZIP creation, extraction, path traversal, and SHA-256 integration tests on Windows.
+$zipTest = Join-Path $PSScriptRoot 'Test-ZipBackup.ps1'
+if (-not (Test-Path -LiteralPath $zipTest -PathType Leaf)) { throw 'ZIP integration test file is missing.' }
+& $zipTest
