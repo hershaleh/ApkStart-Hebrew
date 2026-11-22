@@ -90,7 +90,7 @@ foreach ($required in @(
 }
 if ($source -notmatch 'Schema -ne 1') { throw 'Restore must reject unsupported backup manifest schemas.' }
 if ($source -notmatch 'Split-Path -Leaf \$manifestPath') { throw 'Restore must validate the manifest filename.' }
-if ($source -notmatch 'PathIsRooted') { throw 'Restore must reject rooted relative paths.' }
+if ($source -notmatch 'IsPathRooted') { throw 'Restore must reject rooted relative paths.' }
 if (-not $source.Contains('Remove-Item -LiteralPath $stateFile -Force')) { throw 'Restore must only clear the active backup pointer after a complete restore.' }
 
 
