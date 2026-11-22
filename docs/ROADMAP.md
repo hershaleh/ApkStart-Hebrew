@@ -110,3 +110,8 @@
 ## Installation and display troubleshooting table completion
 - Added reviewed Hebrew translations for the remaining standalone APK installation error causes and remedies, plus display-orientation settings paths.
 - Added dedicated dictionary, Hebrew-content, and allowlist validation for all entries in this batch.
+
+
+## Main interface guidance and splash screen
+- Added Hebrew translations for core runtime guidance, display orientation, window modes, mouse behavior, and splash-screen setup steps.
+- Added validation that every reviewed phrase exists in the dictionary and contains Hebrew text.
