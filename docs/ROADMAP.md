@@ -120,3 +120,8 @@
 ## Main interface translation audit
 - Added Hebrew for complete, previously untranslated labels and help text across performance, Android networking, update sources, diagnostics, shortcuts, data directories, and multi-app behavior.
 - Added dedicated validation for every new main-window HTML phrase; fragments split by inline HTML tags remain excluded to avoid damaging markup.
+
+
+## Hebrew document metadata and secondary windows
+- The translation pass now sets `lang="he"` and `dir="rtl"` on the main UI, separate application shell, manual, and splash-screen HTML documents.
+- Added validation to ensure all four HTML surfaces receive the language and direction metadata; technical paths, URLs, and code retain the existing LTR exceptions.
