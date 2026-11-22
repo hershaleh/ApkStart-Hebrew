@@ -69,6 +69,21 @@ foreach ($required in @('Get-FileHash','APKSTART-HEBREW:RTL','app.asar','Windows
     }
 }
 
+# Installation path handling: reject invalid paths, identify nested ASAR packages,
+# and require an explicit choice when multiple installations are detected.
+foreach ($required in @(
+    "Status='InvalidPath'",
+    "Test-Path -LiteralPath \$path -PathType Container",
+    "resources/app/app.asar",
+    'function Select-DetectedInstall',
+    'נמצאו כמה התקנות',
+    '$found.Count -gt 0',
+    'Select-DetectedInstall $found'
+)) {
+    if (-not $source.Contains($required)) { throw "Installation detection safeguard missing: $required" }
+}
+if ($source -notmatch 'if\(\$targets\.Count -eq 1\)\{return \$targets\[0\]\}') { throw 'Single detected installation should not require a selection dialog.' }
+
 # Version compatibility: only the source-reviewed ApkStart release may be patched.
 foreach ($required in @(
     '$verifiedVersion=''0.6.3''',
