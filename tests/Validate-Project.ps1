@@ -280,3 +280,12 @@ foreach ($key in @('位置：设置 → 诊断与修复 → 开始体检','查�
     if ($translations[$key] -notmatch '[\u0590-\u05FF]') { throw "Diagnostics/runtime manual phrase has no Hebrew translation: $key" }
     if ($null -eq @($manualAllow | Where-Object { $_ -ceq $key })[0]) { throw "Diagnostics/runtime manual phrase is not allowlisted: $key" }
 }
+
+
+# Final reviewed troubleshooting and compatibility phrases.
+$manualAllow = Get-Content -LiteralPath $manualAllowPath -Raw -Encoding UTF8 | ConvertFrom-Json
+foreach ($key in @('首次遇到 ARM 应用时，若翻译层组件还没就位，ApkStart 会自动补齐兼容镜像并重启运行时重试（见 6.3）。','两个坑：① 别只开 VirtualMachinePlatform，那不是模拟器要的加速；② 若 BIOS 里 VT-x/SVM 没开，先按 5.1 进 BIOS 打开，否则系统功能开了也没用。 显卡驱动超过 3 年的，去厂商官网更新；但 ApkStart 不会自动装驱动（装错更糟）。某些老显卡/核显需要走兼容补丁，见设置 → 诊断与修复 → 驱动 · 兼容补丁。','若报的是上表之外的原始英文，直接按 5.3 导出诊断报告反馈。','*本手册对应 v0.6.3，随版本更新。若界面文案与此处略有出入，以软件内实际显示为准。*','仅用于旧配置兼容，正常无需手动动','看到「红色『安装失败』+ 文案却说『正在自动切换兼容镜像后重试』」怎么办？','这是旧版的一个显示错误：镜像文件明明在磁盘上，但复用到一台没开翻译层的旧运行时，切换重试被跳过、直接报了失败，提示文案却照旧说"正在重试"。','你用的不是最新代码，请升级到 0.6.3 的最新构建','升级后再装一次即可。','少数应用自带更深的反模拟检测（强制校验真实传感器、基带等），无法在模拟器里运行；这类应用会给出中文说明，属于限制，不是故障。','确认镜像已就位','若显示未下载','完成后','点一次，等它起来。','想拿到确切的失败 DLL 名（进阶）：','adb 也崩溃怎么办','这一节会自动弹出：当启动失败 / 修复失败被判定为 DLL 类问题时，软件会直接打开到这里。也可随时从自动检测条目的「教程」按钮或标题栏')) {
+    if ($null -eq $translations.PSObject.Properties[$key]) { throw "Final troubleshooting manual translation missing: $key" }
+    if ($translations[$key] -notmatch '[\u0590-\u05FF]') { throw "Final troubleshooting manual phrase has no Hebrew translation: $key" }
+    if ($null -eq @($manualAllow | Where-Object { $_ -ceq $key })[0]) { throw "Final troubleshooting manual phrase is not allowlisted: $key" }
+}
