@@ -250,6 +250,11 @@ function Apply {
                 # Only the separately reviewed category labels, issue titles, hints and detail templates are eligible.
                 $fileKeys=@($autoDebugAllow | Where-Object { $translations.ContainsKey([string]$_) })
             }
+            # Update document language metadata for screen readers and browser text direction.
+            # Keep technical values readable through the dedicated LTR rules below.
+            if($name -in @('index.html','shell.html','manual.html','splash.html')){
+                $updated=[regex]::Replace($updated,'<html\\s+lang=["'']zh-CN["'']\\s*>','<html lang="he" dir="rtl">',1)
+            }
             foreach($key in $fileKeys){
                 if($name -eq 'autodebug.js'){
                     # Match complete JavaScript string/template literals only; never replace substrings in comments or other messages.
