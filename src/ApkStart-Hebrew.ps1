@@ -366,7 +366,7 @@ function Apply {
                     $manifest.Files+= [pscustomobject]@{RelativePath=$relative;BackupPath=$backupPath;BackupHash=(HashFile $backupPath);PatchedHash=$patchedHash}
                     $manifest.Replacements+=$count;$changed++
                 } catch {
-                    if(Test-Path -LiteralPath $backupPath){Copy-Item -LiteralPath $backupPath -Destination $file -Force}
+                    if(Test-Path -LiteralPath $backupPath){Restore-FileAtomic $backupPath $file}
                     throw
                 } finally {
                     if(Test-Path -LiteralPath $tempPath){Remove-Item -LiteralPath $tempPath -Force -ErrorAction SilentlyContinue}
