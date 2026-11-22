@@ -238,3 +238,10 @@ foreach ($key in @('运行入口或窗口接管','① 确认你用的是新版�
     if ($translations[$key] -notmatch '[\u0590-\u05FF]') { throw "Startup troubleshooting text has no Hebrew translation: $key" }
     if ($null -eq @($manualAllow | Where-Object { $_ -ceq $key })[0]) { throw "Startup troubleshooting text is not allowlisted: $key" }
 }
+
+# System diagnostics and built-in manual guidance phrases must remain translated and allowlisted.
+foreach ($key in @('完整的 Android 14 系统镜像','Google 自家内核驱动','Windows 自带功能"Windows 虚拟机监控程序平台"（HypervisorPlatform）','需要你亲自做的只有两类：','：重启进 BIOS → 打开 Intel VT-x / AMD SVM → Enabled（这一步软件无法代劳）。','Windows 功能 / 加速驱动','上次启动失败的真实原因、引导卡死、残留锁文件、孤儿模拟器进程、快照空壳、没有硬件加速','adb 未授权、offline、运行时在跑但 adb 看不到设备','磁盘余量、数据分区配置与实际不符、共享目录不可写','屏幕方向与物理面板冲突、独立窗口下自动全屏不生效','安卓侧没网、下载源不通、最近日志里的错误','从 0.6.3 起，本手册已经','手动打开：标题栏','按钮。想临时关掉自动弹出，可在自动检测设置里关闭通知，教程仍可从问题条目的「教程」按钮打开。')) {
+    if ($null -eq $translations.PSObject.Properties[$key]) { throw "System diagnostics/manual translation missing: $key" }
+    if ($translations[$key] -notmatch '[\u0590-\u05FF]') { throw "System diagnostics/manual phrase has no Hebrew translation: $key" }
+    if ($null -eq @($manualAllow | Where-Object { $_ -ceq $key })[0]) { throw "System diagnostics/manual phrase is not allowlisted: $key" }
+}
