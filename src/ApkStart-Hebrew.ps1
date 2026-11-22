@@ -295,6 +295,19 @@ function Import-BackupZip {
                 if($total -gt 1GB){throw 'הגיבוי המכווץ גדול מדי לאחר פתיחה (מגבלה 1GB).'}
             }
             if(-not $manifestSeen){throw 'קובץ manifest.json חסר בארכיון.'}
+            $manifestEntry=$archive.GetEntry('manifest.json')
+            $reader=New-Object IO.StreamReader($manifestEntry.Open(),[Text.Encoding]::UTF8)
+            try{$archiveManifest=$reader.ReadToEnd() | ConvertFrom-Json}finally{$reader.Dispose()}
+            if([int]$archiveManifest.Schema -ne 1 -or @($archiveManifest.Files).Count -lt 1 -or @($archiveManifest.Files).Count -gt 2000){throw 'מבנה manifest.json אינו נתמך או שמספר הקבצים אינו תקין.'}
+            $expected=@{'manifest.json'=$true}
+            foreach($fileRecord in $archiveManifest.Files){
+                $safeRelative=Get-SafeRelativePath ([string]$fileRecord.RelativePath)
+                $expectedName=('files/'+$safeRelative.Replace('\\','/')).ToLowerInvariant()
+                if($expected.ContainsKey($expectedName)){throw ('המניפסט מכיל נתיב כפול: '+$safeRelative)}
+                $expected[$expectedName]=$true
+            }
+            if($expected.Count -ne $archive.Entries.Count){throw 'תוכן ה-ZIP אינו תואם לרשימת הקבצים שבמניפסט.'}
+            foreach($zipEntry in $archive.Entries){if(-not $expected.ContainsKey(([string]$zipEntry.FullName).ToLowerInvariant())){throw ('נמצא קובץ שאינו רשום במניפסט: '+$zipEntry.FullName)}}
             New-Item -ItemType Directory -Path $stage -Force | Out-Null
             foreach($entry in $archive.Entries){
                 $relative=$entry.FullName
