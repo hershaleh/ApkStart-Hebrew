@@ -273,3 +273,10 @@ foreach ($key in @('操作','方法','全屏 / 窗口切换','旋转横竖屏','
     if ($translations[$key] -notmatch '[\u0590-\u05FF]') { throw "Settings manual phrase has no Hebrew translation: $key" }
     if ($null -eq @($manualAllow | Where-Object { $_ -ceq $key })[0]) { throw "Settings manual phrase is not allowlisted: $key" }
 }
+
+# Reviewed diagnostics, report, tutorial, and runtime-image manual phrases.
+foreach ($key in @('位置：设置 → 诊断与修复 → 开始体检','查什么：CPU 虚拟化（VT-x/SVM）是否开、Hyper-V/虚拟机监控程序平台是否可用、显卡/显存/驱动、内存、系统版本、 emulator -accel-check 、AEHD 驱动。','点「 应用推荐配置 」自动写安全项：内存 / 核心数 / 渲染分辨率 / 画质 / 无加速时强制软件模拟，并固化成一份本机驱动，以后自动套用。','结果分级： ok （正常）/ warn （能用但建议优化）/ bad （不处理跑不起来）。每条都有颜色和说明。','位置：设置 → 诊断与修复 →「自动检测 · 智能诊断」','后台每 10 分钟把机器查一遍，按六类列问题，每条可 一键处理 （重启运行时、清锁、清孤儿进程、作废快照、清理磁盘、重置安卓网络……），修完自动复检：','分类','覆盖的问题','运行时','上次启动失败的真实原因、引导卡死、残留锁文件、孤儿模拟器进程、快照空壳、没有硬件加速','设备连接','adb 未授权、offline、运行时在跑但 adb 看不到设备','存储','磁盘余量、数据分区配置与实际不符、共享目录不可写','设置','屏幕方向与物理面板冲突、独立窗口下自动全屏不生效','网络/日志','安卓侧没网、下载源不通、最近日志里的错误','两条原则：探测失败不会被当成问题（拿不到状态就报"不知道"，绝不瞎报）；同一个老问题不重复打扰。','报告是纯文本，含本机配置、自动选中的启动参数、日志和诊断结论。反馈问题时附上它，能大幅加快定位。','从 0.6.3 起，本手册已经 嵌入软件','自动检测/修复也会把教程送到你面前：','自动检测发现问题时，问题条目右侧有「教程」按钮，点开直达对应章节；','自动修复失败后，会自动弹出相应教程','同一个教程在一次运行里只自动弹一次，不会反复打断你。','ApkStart 不是在模拟一个"空安卓"，而是加载一个 完整的 Android 14 系统镜像 当底座。','0.6.3 只有 一个通用镜像 （Google Play x86_64），x86 和 ARM 应用都靠它跑——不再像老版本那样分"AOSP 镜像 / 兼容镜像"两套。','镜像缺失 / 损坏 / 与旧用户数据不兼容 → 开机失败、卡在引导、反复重启。','用户数据（ /data ）是薄差分层，系统镜像全机共享一份。')) {
+    if ($null -eq $translations.PSObject.Properties[$key]) { throw "Diagnostics/runtime manual translation missing: $key" }
+    if ($translations[$key] -notmatch '[\u0590-\u05FF]') { throw "Diagnostics/runtime manual phrase has no Hebrew translation: $key" }
+    if ($null -eq @($manualAllow | Where-Object { $_ -ceq $key })[0]) { throw "Diagnostics/runtime manual phrase is not allowlisted: $key" }
+}
