@@ -506,7 +506,7 @@ function Show-RestorePreview {
     $dialog.StartPosition='CenterParent'
     $dialog.RightToLeft='Yes';$dialog.RightToLeftLayout=$true
     $summary=New-Object Windows.Forms.Label
-    $summary.Text=('ניתן לשחזר: '+$ready+' קבצים    |    צפויים להידלג: '+$skipped+' קבצים'+[Environment]::NewLine+'התקנה: '+$TargetRoot+'    |    גרסה בגיבוי: '+$Version)
+    $summary.Text=('סה״כ בגיבוי: '+$Items.Count+' קבצים    |    ניתן לשחזר: '+$ready+'    |    צפויים להידלג: '+$skipped+[Environment]::NewLine+'התקנה: '+$TargetRoot+'    |    גרסה בגיבוי: '+$Version)
     $summary.Location=New-Object Drawing.Point(14,12);$summary.Size=New-Object Drawing.Size(805,48);$summary.Anchor='Top,Left,Right'
     $dialog.Controls.Add($summary)
     $list=New-Object Windows.Forms.ListView
