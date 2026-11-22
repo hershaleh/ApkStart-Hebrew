@@ -495,6 +495,49 @@ function Apply {
         foreach($entry in $manifest.Files){try{$rollbackDest=Join-Path $target.Root (Get-SafeRelativePath ([string]$entry.RelativePath));if((Test-Path -LiteralPath $rollbackDest -PathType Leaf) -and (HashFile $rollbackDest) -eq [string]$entry.PatchedHash -and (Test-Path -LiteralPath $entry.BackupPath -PathType Leaf) -and (HashFile $entry.BackupPath) -eq [string]$entry.BackupHash){Restore-FileAtomic $entry.BackupPath $rollbackDest}}catch{Log ('לא ניתן היה להשלים שחזור אוטומטי של קובץ: '+$entry.RelativePath) 'error'}}
     }
 }
+function Show-RestorePreview {
+    param([object[]]$Items,[string]$TargetRoot,[string]$Version)
+    $ready=@($Items | Where-Object {$_.CanRestore}).Count
+    $skipped=$Items.Count-$ready
+    $dialog=New-Object Windows.Forms.Form
+    $dialog.Text='בדיקת שחזור לפני אישור'
+    $dialog.Size=New-Object Drawing.Size(850,520)
+    $dialog.MinimumSize=New-Object Drawing.Size(720,420)
+    $dialog.StartPosition='CenterParent'
+    $dialog.RightToLeft='Yes';$dialog.RightToLeftLayout=$true
+    $summary=New-Object Windows.Forms.Label
+    $summary.Text=('ניתן לשחזר: '+$ready+' קבצים    |    צפויים להידלג: '+$skipped+' קבצים'+[Environment]::NewLine+'התקנה: '+$TargetRoot+'    |    גרסה בגיבוי: '+$Version)
+    $summary.Location=New-Object Drawing.Point(14,12);$summary.Size=New-Object Drawing.Size(805,48);$summary.Anchor='Top,Left,Right'
+    $dialog.Controls.Add($summary)
+    $list=New-Object Windows.Forms.ListView
+    $list.Location=New-Object Drawing.Point(14,68);$list.Size=New-Object Drawing.Size(805,350)
+    $list.Anchor='Top,Bottom,Left,Right';$list.View='Details';$list.FullRowSelect=$true
+    $list.GridLines=$true;$list.RightToLeft='Yes';$list.RightToLeftLayout=$true
+    [void]$list.Columns.Add('קובץ',570)
+    [void]$list.Columns.Add('תוצאה צפויה',205)
+    foreach($item in $Items){
+        $row=New-Object Windows.Forms.ListViewItem([string]$item.RelativePath)
+        [void]$row.SubItems.Add([string]$item.Status)
+        if($item.CanRestore){$row.ForeColor=[Drawing.Color]::DarkGreen}else{$row.ForeColor=[Drawing.Color]::Firebrick}
+        [void]$list.Items.Add($row)
+    }
+    $dialog.Controls.Add($list)
+    $note=New-Object Windows.Forms.Label
+    $note.Text='הבדיקה אינה מבטיחה שקובץ לא ישתנה ברגע האחרון; לפני כל כתיבה תיבדק שוב טביעת SHA-256.'
+    $note.Location=New-Object Drawing.Point(14,426);$note.Size=New-Object Drawing.Size(805,28);$note.Anchor='Bottom,Left,Right'
+    $dialog.Controls.Add($note)
+    $ok=New-Object Windows.Forms.Button
+    $ok.Text='אשר שחזור';$ok.Enabled=($ready -gt 0);$ok.DialogResult=[Windows.Forms.DialogResult]::OK
+    $ok.Location=New-Object Drawing.Point(585,458);$ok.Size=New-Object Drawing.Size(110,30);$ok.Anchor='Bottom,Right'
+    $dialog.Controls.Add($ok)
+    $cancel=New-Object Windows.Forms.Button
+    $cancel.Text='ביטול';$cancel.DialogResult=[Windows.Forms.DialogResult]::Cancel
+    $cancel.Location=New-Object Drawing.Point(705,458);$cancel.Size=New-Object Drawing.Size(110,30);$cancel.Anchor='Bottom,Right'
+    $dialog.Controls.Add($cancel)
+    $dialog.AcceptButton=$ok;$dialog.CancelButton=$cancel
+    return ($dialog.ShowDialog($form) -eq [Windows.Forms.DialogResult]::OK)
+}
+
 function Restore {
     if (Get-Process -Name 'ApkStart' -ErrorAction SilentlyContinue) { Log 'ApkStart עדיין פועל. סגור אותו לפני שחזור קבצים.' 'warning'; return }
     try{
@@ -524,19 +567,29 @@ function Restore {
             if($seenPaths.ContainsKey($duplicateKey)){throw ('המניפסט מכיל קובץ כפול: '+$relative)}
             $seenPaths[$duplicateKey]=$true
         }
-        $confirmText='השחזור יחזיר את קובצי הממשק למצבם המקורי כפי שנשמרו בגיבוי שנבחר.'+[Environment]::NewLine+[Environment]::NewLine+'התקנה: '+$targetRoot+[Environment]::NewLine+'גרסה בעת הגיבוי: '+[string]$m.Version+[Environment]::NewLine+'מספר קבצים: '+@($m.Files).Count+[Environment]::NewLine+[Environment]::NewLine+'להמשיך?'
-        if([Windows.Forms.MessageBox]::Show($confirmText,'אישור שחזור',[Windows.Forms.MessageBoxButtons]::YesNo,[Windows.Forms.MessageBoxIcon]::Warning) -ne [Windows.Forms.DialogResult]::Yes){Log 'השחזור בוטל.' 'warning';return}
-        $ok=0;$skip=0
+        $preview=New-Object System.Collections.Generic.List[object]
         foreach($entry in $m.Files){
             $relative=Get-SafeRelativePath ([string]$entry.RelativePath)
             $dest=Join-Path $targetRoot $relative
             $backupPath=Join-Path $backupFiles $relative
             if(-not (Test-PathWithin $dest $targetRoot) -or -not (Test-PathWithin $backupPath $backupFiles)){throw 'נתיב קובץ חורג מתיקיית היעד או הגיבוי.'}
-            if(!(Test-Path -LiteralPath $dest -PathType Leaf) -or !(Test-Path -LiteralPath $backupPath -PathType Leaf)){$skip++;continue}
-            if(-not [string]::IsNullOrWhiteSpace([string]$entry.BackupHash) -and (HashFile $backupPath) -ne [string]$entry.BackupHash){Log ('דילוג: קובץ הגיבוי חסר או שונה: '+$relative) 'warning';$skip++;continue}
-            if([string]::IsNullOrWhiteSpace([string]$entry.BackupHash)){Log ('אזהרה: זהו גיבוי ישן ללא טביעת אצבע לגיבוי; נבדקה טביעת האצבע של הקובץ המתורגם בלבד: '+$relative) 'warning'}
-            if((HashFile $dest) -ne [string]$entry.PatchedHash){Log ('דילוג: הקובץ השתנה מאז ההחלה: '+$relative) 'warning';$skip++;continue}
-            Restore-FileAtomic $backupPath $dest
+            $canRestore=$false;$status=''
+            if(!(Test-Path -LiteralPath $dest -PathType Leaf)){$status='קובץ היעד חסר'}
+            elseif(!(Test-Path -LiteralPath $backupPath -PathType Leaf)){$status='קובץ הגיבוי חסר'}
+            elseif(-not [string]::IsNullOrWhiteSpace([string]$entry.BackupHash) -and (HashFile $backupPath) -ne [string]$entry.BackupHash){$status='עותק הגיבוי השתנה'}
+            elseif((HashFile $dest) -ne [string]$entry.PatchedHash){$status='קובץ היעד השתנה מאז ההחלה'}
+            else{$canRestore=$true;$status='מוכן לשחזור'}
+            if([string]::IsNullOrWhiteSpace([string]$entry.BackupHash) -and $canRestore){$status='מוכן לשחזור (גיבוי ישן)'}
+            $preview.Add([pscustomobject]@{RelativePath=$relative;CanRestore=$canRestore;Status=$status;Destination=$dest;BackupPath=$backupPath;Entry=$entry})
+        }
+        if(-not (Show-RestorePreview -Items @($preview) -TargetRoot $targetRoot -Version ([string]$m.Version))){Log 'השחזור בוטל לאחר בדיקת הקבצים.' 'warning';return}
+        $ok=0;$skip=0
+        foreach($item in $preview){
+            if(-not $item.CanRestore){Log ('דילוג: '+$item.RelativePath+' — '+$item.Status) 'warning';$skip++;continue}
+            if(-not (Test-Path -LiteralPath $item.Destination -PathType Leaf) -or -not (Test-Path -LiteralPath $item.BackupPath -PathType Leaf)){$skip++;Log ('דילוג: הקובץ נעלם לאחר בדיקת הקדם: '+$item.RelativePath) 'warning';continue}
+            if(-not [string]::IsNullOrWhiteSpace([string]$item.Entry.BackupHash) -and (HashFile $item.BackupPath) -ne [string]$item.Entry.BackupHash){$skip++;Log ('דילוג: עותק הגיבוי השתנה לאחר בדיקת הקדם: '+$item.RelativePath) 'warning';continue}
+            if((HashFile $item.Destination) -ne [string]$item.Entry.PatchedHash){$skip++;Log ('דילוג: קובץ היעד השתנה לאחר בדיקת הקדם: '+$item.RelativePath) 'warning';continue}
+            Restore-FileAtomic $item.BackupPath $item.Destination
             $ok++
         }
         Log ("שוחזרו "+$ok+" קבצים; דולגו "+$skip+".") 'success'
