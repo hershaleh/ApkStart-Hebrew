@@ -142,17 +142,30 @@ function Select-DetectedInstall([string[]]$targets) {
     return $null
 }
 
+function Update-ActionState {
+    $isSupported=($null -ne $script:Target -and $script:Target.Status -eq 'Supported')
+    if($apply){$apply.Enabled=$isSupported}
+    if($restore){$restore.Enabled=(Test-Path -LiteralPath $stateFile -PathType Leaf)}
+}
 function Scan {
     $target=Resolve-Target $pathBox.Text
     $script:Target=$target
-    if(!$target){Log 'בחר תיקיית ApkStart.' 'warning';return $null}
+    if(!$target){
+        $statusLabel.Text='נדרשת בחירת תיקייה וסריקה';$statusLabel.ForeColor=[Drawing.Color]::DimGray
+        $versionLabel.Text='גרסה: —'
+        Update-ActionState
+        Log 'בחר תיקיית ApkStart ולחץ על סריקה.' 'warning'
+        return $null
+    }
     $versionLabel.Text='גרסה: '+$target.Version
     if($target.Status -eq 'Supported'){$statusLabel.Text='נמצאה התקנה נתמכת';$statusLabel.ForeColor=[Drawing.Color]::DarkGreen;Log ($target.Message+' '+$target.Root) 'success'}
     elseif($target.Status -eq 'UnsupportedVersion'){$statusLabel.Text='גרסה לא מאומתת — ההחלה חסומה';$statusLabel.ForeColor=[Drawing.Color]::DarkGoldenrod;Log ($target.Message+' '+$target.Root) 'warning'}
     elseif($target.Status -eq 'UnsupportedStructure'){$statusLabel.Text='מבנה השתנה — נדרשת בדיקה מחדש';$statusLabel.ForeColor=[Drawing.Color]::DarkGoldenrod;Log ($target.Message+' '+$target.Root) 'warning'}
     elseif($target.Status -eq 'InvalidPath'){$statusLabel.Text='נתיב לא תקין';$statusLabel.ForeColor=[Drawing.Color]::Firebrick;Log $target.Message 'error'}
+    elseif($target.Status -eq 'MSIX'){$statusLabel.Text='חבילת Microsoft Store אינה ניתנת לשינוי';$statusLabel.ForeColor=[Drawing.Color]::DarkGoldenrod;Log $target.Message 'warning'}
     elseif($target.Status -eq 'ASAR'){$statusLabel.Text='נדרש טיפול ייעודי ב-ASAR';$statusLabel.ForeColor=[Drawing.Color]::DarkGoldenrod;Log $target.Message 'warning'}
-    else{$statusLabel.Text='התקנה אינה נתמכת';$statusLabel.ForeColor=[Drawing.Color]::Firebrick;Log $target.Message 'error'}
+    else{$statusLabel.Text='לא זוהתה התקנת ApkStart בתיקייה';$statusLabel.ForeColor=[Drawing.Color]::Firebrick;Log $target.Message 'error'}
+    Update-ActionState
     return $target
 }
 function Rtl([string]$text) {
@@ -472,13 +485,14 @@ $detect=New-Object Windows.Forms.Button;$detect.Text='זיהוי אוטומטי'
 $statusLabel=New-Object Windows.Forms.Label;$statusLabel.Text='טרם בוצעה סריקה';$statusLabel.AutoSize=$true;$statusLabel.Font=New-Object Drawing.Font('Segoe UI',10,[Drawing.FontStyle]::Bold);$statusLabel.Location=New-Object Drawing.Point(22,82);$main.Controls.Add($statusLabel)
 $versionLabel=New-Object Windows.Forms.Label;$versionLabel.Text='גרסה: —';$versionLabel.AutoSize=$true;$versionLabel.Location=New-Object Drawing.Point(22,108);$main.Controls.Add($versionLabel)
 $scan=New-Object Windows.Forms.Button;$scan.Text='סריקה';$scan.Location=New-Object Drawing.Point(22,140);$scan.Size=New-Object Drawing.Size(100,36);$main.Controls.Add($scan)
-$apply=New-Object Windows.Forms.Button;$apply.Text='החלת עברית';$apply.Location=New-Object Drawing.Point(132,140);$apply.Size=New-Object Drawing.Size(130,36);$apply.BackColor=[Drawing.Color]::FromArgb(16,130,91);$apply.ForeColor=[Drawing.Color]::White;$apply.FlatStyle='Flat';$main.Controls.Add($apply)
-$restore=New-Object Windows.Forms.Button;$restore.Text='שחזור המקור';$restore.Location=New-Object Drawing.Point(272,140);$restore.Size=New-Object Drawing.Size(120,36);$main.Controls.Add($restore)
+$apply=New-Object Windows.Forms.Button;$apply.Text='החלת עברית';$apply.Enabled=$false;$apply.Location=New-Object Drawing.Point(132,140);$apply.Size=New-Object Drawing.Size(130,36);$apply.BackColor=[Drawing.Color]::FromArgb(16,130,91);$apply.ForeColor=[Drawing.Color]::White;$apply.FlatStyle='Flat';$main.Controls.Add($apply)
+$restore=New-Object Windows.Forms.Button;$restore.Text='שחזור המקור';$restore.Enabled=(Test-Path -LiteralPath $stateFile -PathType Leaf);$restore.Location=New-Object Drawing.Point(272,140);$restore.Size=New-Object Drawing.Size(120,36);$main.Controls.Add($restore)
 $note=New-Object Windows.Forms.Label;$note.Text='התרגום עדיין חלקי. MSIX ו-app.asar מזוהים אך אינם משתנים בשלב זה.';$note.AutoSize=$false;$note.Size=New-Object Drawing.Size(750,32);$note.Location=New-Object Drawing.Point(22,190);$note.ForeColor=[Drawing.Color]::DarkGoldenrod;$main.Controls.Add($note)
 $logTitle=New-Object Windows.Forms.Label;$logTitle.Text='יומן פעולות';$logTitle.AutoSize=$true;$logTitle.Location=New-Object Drawing.Point(22,226);$main.Controls.Add($logTitle)
 $logBox=New-Object Windows.Forms.RichTextBox;$logBox.Location=New-Object Drawing.Point(22,251);$logBox.Size=New-Object Drawing.Size(756,290);$logBox.Anchor='Top,Bottom,Left,Right';$logBox.ReadOnly=$true;$logBox.BackColor=[Drawing.Color]::White;$logBox.Font=New-Object Drawing.Font('Consolas',9);$logBox.RightToLeft='Yes';$main.Controls.Add($logBox)
 $browse.Add_Click({$d=New-Object Windows.Forms.FolderBrowserDialog;$d.Description='בחר תיקיית ApkStart או resources/app';if($d.ShowDialog() -eq [Windows.Forms.DialogResult]::OK){$pathBox.Text=$d.SelectedPath;Scan | Out-Null}})
 $detect.Add_Click({$found=@(Detect-Targets | Where-Object { (Resolve-Target $_).Status -in @('Supported','UnsupportedVersion','UnsupportedStructure','ASAR') });if($found.Count -eq 0){Log 'לא נמצאה התקנה מזוהה. בחר תיקייה ידנית.' 'warning';return};$chosen=Select-DetectedInstall $found;if($chosen){$pathBox.Text=$chosen;Scan | Out-Null}})
+$pathBox.Add_TextChanged({$script:Target=$null;$statusLabel.Text='הנתיב השתנה — יש לבצע סריקה מחדש';$statusLabel.ForeColor=[Drawing.Color]::DarkGoldenrod;Update-ActionState})
 $scan.Add_Click({Scan | Out-Null});$apply.Add_Click({Apply});$restore.Add_Click({Restore})
-$form.Add_Shown({Log 'ברוך הבא. סגור את ApkStart לפני החלה או שחזור.';$found=@(Detect-Targets | Where-Object { (Resolve-Target $_).Status -in @('Supported','UnsupportedVersion','UnsupportedStructure','ASAR') });if($found.Count -gt 0){$chosen=Select-DetectedInstall $found;if($chosen){$pathBox.Text=$chosen;Scan | Out-Null}}})
+$form.Add_Shown({Update-ActionState;Log 'ברוך הבא. בחר התקנה ובצע סריקה. כפתור ההחלה יופעל רק להתקנה תואמת.';$found=@(Detect-Targets | Where-Object { (Resolve-Target $_).Status -in @('Supported','UnsupportedVersion','UnsupportedStructure','ASAR') });if($found.Count -gt 0){$chosen=Select-DetectedInstall $found;if($chosen){$pathBox.Text=$chosen;Scan | Out-Null}}})
 [void]$form.ShowDialog()
