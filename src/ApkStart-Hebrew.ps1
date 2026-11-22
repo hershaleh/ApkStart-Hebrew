@@ -302,7 +302,7 @@ function Import-BackupZip {
             $expected=@{'manifest.json'=$true}
             foreach($fileRecord in $archiveManifest.Files){
                 $safeRelative=Get-SafeRelativePath ([string]$fileRecord.RelativePath)
-                $expectedName=('files/'+$safeRelative.Replace('\\','/')).ToLowerInvariant()
+                $expectedName=('files/'+$safeRelative.Replace([string][char]92,'/')).ToLowerInvariant()
                 if($expected.ContainsKey($expectedName)){throw ('המניפסט מכיל נתיב כפול: '+$safeRelative)}
                 $expected[$expectedName]=$true
             }
