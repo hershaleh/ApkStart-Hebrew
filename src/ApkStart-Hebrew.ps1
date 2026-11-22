@@ -347,7 +347,7 @@ function Restore {
         $m=Get-Content -LiteralPath $manifestPath -Raw -Encoding UTF8 | ConvertFrom-Json
         if([int]$m.Schema -ne 1 -or [string]::IsNullOrWhiteSpace([string]$m.TargetRoot) -or @($m.Files).Count -eq 0){throw 'מבנה המניפסט אינו נתמך או אינו שלם.'}
         $targetRoot=Get-FullPath ([string]$m.TargetRoot)
-        if(!(Test-Path -LiteralPath $targetRoot -PathType Container)){throw 'תיקיית ההתקנה המקורית אינה קיימת.'}
+        if(!(Test-Path -LiteralPath $targetRoot -PathType Container) -or !(Test-Path -LiteralPath (Join-Path $targetRoot 'src/ui/index.html') -PathType Leaf) -or !(Test-Path -LiteralPath (Join-Path $targetRoot 'src/ui/app.js') -PathType Leaf)){throw 'תיקיית ההתקנה המקורית אינה קיימת או שמבנה ApkStart אינו מזוהה.'}
         $backupRoot=Get-FullPath (Split-Path -Parent $manifestPath)
         if(-not (Test-PathWithin $backupRoot $backupsRoot) -or (Join-Path $backupRoot 'manifest.json') -cne $manifestPath){throw 'תיקיית הגיבוי אינה תקינה.'}
         $backupFiles=Join-Path $backupRoot 'files'
@@ -358,7 +358,8 @@ function Restore {
             $backupPath=Join-Path $backupFiles $relative
             if(-not (Test-PathWithin $dest $targetRoot) -or -not (Test-PathWithin $backupPath $backupFiles)){throw 'נתיב קובץ חורג מתיקיית היעד או הגיבוי.'}
             if(!(Test-Path -LiteralPath $dest -PathType Leaf) -or !(Test-Path -LiteralPath $backupPath -PathType Leaf)){$skip++;continue}
-            if((HashFile $backupPath) -ne [string]$entry.BackupHash){Log ('דילוג: קובץ הגיבוי חסר או שונה: '+$relative) 'warning';$skip++;continue}
+            if(-not [string]::IsNullOrWhiteSpace([string]$entry.BackupHash) -and (HashFile $backupPath) -ne [string]$entry.BackupHash){Log ('דילוג: קובץ הגיבוי חסר או שונה: '+$relative) 'warning';$skip++;continue}
+            if([string]::IsNullOrWhiteSpace([string]$entry.BackupHash)){Log ('אזהרה: זהו גיבוי ישן ללא טביעת אצבע לגיבוי; נבדקה טביעת האצבע של הקובץ המתורגם בלבד: '+$relative) 'warning'}
             if((HashFile $dest) -ne [string]$entry.PatchedHash){Log ('דילוג: הקובץ השתנה מאז ההחלה: '+$relative) 'warning';$skip++;continue}
             $tempPath=$dest+'.apkstart-hebrew-restore.tmp'
             try{
