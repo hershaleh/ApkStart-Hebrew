@@ -102,6 +102,21 @@ foreach ($required in @(
 }
 if ($source -notmatch "Status='UnsupportedStructure'.*ההחלה חסומה") { throw 'Changed same-version builds must be blocked.' }
 
+# Reapply/restore safety: every restoration path uses the same atomic replacement helper.
+foreach ($required in @(
+    'function Restore-FileAtomic',
+    '[IO.File]::Copy($source,$temp,$true)',
+    '[IO.File]::Replace($temp,$destination,$null,$true)',
+    'Restore-FileAtomic $entry.BackupPath $file',
+    'Restore-FileAtomic $entry.BackupPath $rollbackDest',
+    'Restore-FileAtomic $backupPath $dest',
+    '$seenPaths=@{}',
+    'המניפסט מכיל קובץ כפול'
+)) {
+    if (-not $source.Contains($required)) { throw "Safe reapply/restore control missing: $required" }
+}
+if ($source -match 'Copy-Item -LiteralPath \$entry\.BackupPath -Destination') { throw 'Rollback must not use non-atomic overwrite.' }
+
 # Backup/restore integrity: validate path containment, allowlisted targets, backup hashes,
 # and the patched-file hash before any restore or automatic rollback.
 foreach ($required in @(
