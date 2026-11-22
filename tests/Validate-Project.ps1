@@ -45,7 +45,7 @@ foreach ($key in @('没有发现影响使用的问题。运行时、adb 授权�
 foreach ($key in @('拖入 APK 文件，或点击选择',' · 独立窗口已启用','虚拟机未联网','（无硬件加速，将回退软件模拟）','Wi-Fi 已开','Wi-Fi 已关',' · 飞行模式','重启电脑后硬件加速才会生效，回来点「开始体检」确认','可以点「开始体检」确认结果','桌面与开始菜单入口正常','已联网')) {
     if ($null -eq $translations.PSObject.Properties[$key]) { throw "Renderer environment translation missing: $key" }
     if ($null -eq @($appAllow | Where-Object { $_ -ceq $key })[0]) { throw "Renderer environment phrase is not allowlisted: $key" }
-    if ($translations[$key] -notmatch '[\\u0590-\\u05FF]') { throw "Renderer environment phrase has no Hebrew translation: $key" }
+    if ($translations[$key] -notmatch '[\u0590-\u05FF]') { throw "Renderer environment phrase has no Hebrew translation: $key" }
 }
 
 foreach ($key in @('正在运行','停止运行时',' · 已是精简状态')) {
