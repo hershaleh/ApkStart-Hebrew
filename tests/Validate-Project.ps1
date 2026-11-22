@@ -69,6 +69,30 @@ foreach ($required in @('Get-FileHash','APKSTART-HEBREW:RTL','app.asar','Windows
     }
 }
 
+# Backup/restore integrity: validate path containment, allowlisted targets, backup hashes,
+# and the patched-file hash before any restore or automatic rollback.
+foreach ($required in @(
+    'function Test-PathWithin',
+    'function Get-SafeRelativePath',
+    'BackupHash=(HashFile $backupPath)',
+    'Get-FullPath ([string]$state.ManifestPath)',
+    'Test-PathWithin $manifestPath $backupsRoot',
+    'Test-PathWithin $backupRoot $backupsRoot',
+    'Test-PathWithin $dest $targetRoot',
+    'Test-PathWithin $backupPath $backupFiles',
+    '(HashFile $backupPath) -ne [string]$entry.BackupHash',
+    '(HashFile $dest) -ne [string]$entry.PatchedHash',
+    'src\core\autodebug.js',
+    'apkstart-hebrew-restore.tmp',
+    'APKSTART-HEBREW'
+)) {
+    if (-not $source.Contains($required)) { throw "Backup/restore safety control missing: $required" }
+}
+if ($source -notmatch 'Schema -ne 1') { throw 'Restore must reject unsupported backup manifest schemas.' }
+if ($source -notmatch 'Split-Path -Leaf \$manifestPath') { throw 'Restore must validate the manifest filename.' }
+if ($source -notmatch 'PathIsRooted') { throw 'Restore must reject rooted relative paths.' }
+if ($source -notmatch "Remove-Item -LiteralPath \\$stateFile") { throw 'Restore must only clear the active backup pointer after a complete restore.' }
+
 
 foreach ($key in @('横屏 / 竖屏（Ctrl+R）','最小化','最大化','关闭','apkstart-产品使用手册与问题解决方案','1-30-秒看懂-apkstart','2-安装与首次启动','6-常见问题解决方案','ADB 未授权','Windows 上的安卓应用运行器','正在准备…','首次使用 · 自动配置中','首次启动 · 本地准备中（无需联网）','选择数据存放目录','选择要安装的 APK','确认清理运行时缓存','重建桌面/开始菜单快捷方式')) {
     if ($null -eq $translations.PSObject.Properties[$key]) {
