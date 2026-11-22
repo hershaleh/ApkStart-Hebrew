@@ -67,5 +67,23 @@ try{
  $tampered2=Join-Path $w 'tampered2.zip';$a=[IO.Compression.ZipFile]::Open($tampered2,[IO.Compression.ZipArchiveMode]::Create)
  try{foreach($x in @(@{p=$manifest;n='manifest.json'},@{p=$payload;n='files/src/ui/index.html'})){$e=$a.CreateEntry($x.n);$i=[IO.File]::OpenRead($x.p);try{$o=$e.Open();try{$i.CopyTo($o)}finally{$o.Dispose()}}finally{$i.Dispose()}}}finally{$a.Dispose()}
  $rejected=$false;try{Validate-Zip $tampered2 (Join-Path $w 'tampered-stage')|Out-Null}catch{$rejected=$true};Assert $rejected 'SHA-256 tampering rejection'
+
+ # Duplicate archive entry names must be rejected before extraction.
+ $duplicate=Join-Path $w 'duplicate.zip';$a=[IO.Compression.ZipFile]::Open($duplicate,[IO.Compression.ZipArchiveMode]::Create)
+ try{
+  foreach($x in @(@{p=$manifest;n='manifest.json'},@{p=$payload;n='files/src/ui/index.html'},@{p=$payload;n='files/src/ui/index.html'})){
+   $e=$a.CreateEntry($x.n);$i=[IO.File]::OpenRead($x.p);try{$o=$e.Open();try{$i.CopyTo($o)}finally{$o.Dispose()}}finally{$i.Dispose()}
+  }
+ }finally{$a.Dispose()}
+ $rejected=$false;try{Validate-Zip $duplicate (Join-Path $w 'duplicate-stage')|Out-Null}catch{$rejected=$true};Assert $rejected 'duplicate archive entry rejection'
+ # Entries not listed in the manifest must be rejected (even when their paths are safe).
+ $extra=Join-Path $w 'extra.zip';$a=[IO.Compression.ZipFile]::Open($extra,[IO.Compression.ZipArchiveMode]::Create)
+ try{
+  foreach($x in @(@{p=$manifest;n='manifest.json'},@{p=$payload;n='files/src/ui/index.html'},@{p=$payload;n='files/src/ui/shell.html'})){
+   $e=$a.CreateEntry($x.n);$i=[IO.File]::OpenRead($x.p);try{$o=$e.Open();try{$i.CopyTo($o)}finally{$o.Dispose()}}finally{$i.Dispose()}
+  }
+ }finally{$a.Dispose()}
+ $rejected=$false;try{Validate-Zip $extra (Join-Path $w 'extra-stage')|Out-Null}catch{$rejected=$true};Assert $rejected 'unlisted archive entry rejection'
+
  Write-Host 'ZIP backup integration tests passed: roundtrip, ZIP-slip, SHA-256 tampering.'
 }finally{if(Test-Path $w){Remove-Item $w -Recurse -Force -ErrorAction SilentlyContinue}}
