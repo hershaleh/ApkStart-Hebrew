@@ -33,7 +33,7 @@ function Validate-Zip([string]$zip,[string]$stage){
   $expected=@{'manifest.json'=$true}
   foreach($f in $m.Files){$k=('files/'+(Safe ([string]$f.RelativePath)).Replace([string][char]92,'/')).ToLowerInvariant();if($expected.ContainsKey($k)){throw 'duplicate manifest path'};$expected[$k]=$true}
   Assert ($expected.Count -eq $a.Entries.Count) 'manifest exact count'
-  foreach($e in $a.Entries){Assert $expected.ContainsKey($e.FullName.ToLowerInvariant()) 'manifest membership'}
+  foreach($e in $a.Entries){Assert ($expected.ContainsKey($e.FullName.ToLowerInvariant())) 'manifest membership'}
   New-Item -ItemType Directory -Path $stage -Force|Out-Null
   foreach($e in $a.Entries){
    if($e.FullName -ceq 'manifest.json'){$dest=Join-Path $stage 'manifest.json'}else{$dest=Join-Path (Join-Path $stage 'files') (Safe $e.FullName.Substring(6))}
