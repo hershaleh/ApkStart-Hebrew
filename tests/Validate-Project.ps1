@@ -69,6 +69,21 @@ foreach ($required in @('Get-FileHash','APKSTART-HEBREW:RTL','app.asar','Windows
     }
 }
 
+# User-facing action gating: apply is disabled until a supported scan,
+# changing the path invalidates the previous scan, and restore follows backup availability.
+foreach ($required in @(
+    'function Update-ActionState',
+    '$apply.Enabled=$isSupported',
+    '$restore.Enabled=(Test-Path -LiteralPath $stateFile -PathType Leaf)',
+    '$script:Target=$null',
+    'הנתיב השתנה — יש לבצע סריקה מחדש',
+    'נדרשת בחירת תיקייה וסריקה',
+    "elseif(\$target.Status -eq 'MSIX')",
+    'כפתור ההחלה יופעל רק להתקנה תואמת'
+)) {
+    if (-not $source.Contains($required)) { throw "UI action-state safeguard missing: $required" }
+}
+
 # Installation path handling: reject invalid paths, identify nested ASAR packages,
 # and require an explicit choice when multiple installations are detected.
 foreach ($required in @(
