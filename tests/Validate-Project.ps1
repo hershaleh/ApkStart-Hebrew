@@ -7,8 +7,9 @@ $appAllowPath = Join-Path $root 'translations/app-js-allowlist.json'
 $manualAllowPath = Join-Path $root 'translations/manual-allowlist.json'
 $shellAllowPath = Join-Path $root 'translations/shell-ui-allowlist.json'
 $mainAllowPath = Join-Path $root 'translations/main-process-allowlist.json'
+$autoDebugAllowPath = Join-Path $root 'translations/autodebug-allowlist.json'
 
-foreach ($path in @($script, $dict, $launcher, $appAllowPath, $manualAllowPath, $shellAllowPath, $mainAllowPath)) {
+foreach ($path in @($script, $dict, $launcher, $appAllowPath, $manualAllowPath, $shellAllowPath, $mainAllowPath, $autoDebugAllowPath)) {
     if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
         throw "Missing required project file: $path"
     }
@@ -79,6 +80,18 @@ if ($source -notmatch 'main-process-allowlist\.json' -or $source -notmatch "\$na
     throw 'Main-process translations must remain restricted to the dedicated reviewed allowlist.'
 }
 
+
+
+# Automatic diagnostic engine: only explicitly reviewed UI literals may be translated.
+$autoDebugAllow = Get-Content -LiteralPath $autoDebugAllowPath -Raw -Encoding UTF8 | ConvertFrom-Json
+if (@($autoDebugAllow).Count -lt 55) { throw 'Reviewed automatic-diagnostics allowlist unexpectedly small.' }
+foreach ($key in $autoDebugAllow) {
+    if ($null -eq $translations.PSObject.Properties[[string]$key]) { throw "Automatic-diagnostics allowlist key is missing from dictionary: $key" }
+    if ($translations[[string]$key] -notmatch '[\\u0590-\\u05FF]') { throw "Automatic-diagnostics phrase has no Hebrew translation: $key" }
+}
+if ($source -notmatch 'src/core/autodebug\\.js' -or $source -notmatch 'autodebug-allowlist\\.json' -or $source -notmatch "\\$name -eq 'autodebug\\.js'") {
+    throw 'Diagnostic engine translations must use their dedicated reviewed allowlist.'
+}
 
 $shellAllow = Get-Content -LiteralPath $shellAllowPath -Raw -Encoding UTF8 | ConvertFrom-Json
 if (@($shellAllow).Count -lt 5) { throw 'Reviewed shell UI allowlist unexpectedly small.' }
