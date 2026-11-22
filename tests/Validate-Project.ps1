@@ -289,3 +289,12 @@ foreach ($key in @('首次遇到 ARM 应用时，若翻译层组件还没就位�
     if ($translations[$key] -notmatch '[\u0590-\u05FF]') { throw "Final troubleshooting manual phrase has no Hebrew translation: $key" }
     if ($null -eq @($manualAllow | Where-Object { $_ -ceq $key })[0]) { throw "Final troubleshooting manual phrase is not allowlisted: $key" }
 }
+
+
+# Remaining standalone installation and display table entries.
+$manualAllow = Get-Content -LiteralPath $manualAllowPath -Raw -Encoding UTF8 | ConvertFrom-Json
+foreach ($key in @('设置 → 显示与窗口 → 自动全屏（配合"强制方向"效果最好）','设置 → 显示与窗口 → 屏幕方向','应用只提供 ARM 库，当前镜像没有 ARM 转译层','需更高系统镜像；当前为 Android 14（API 34），极少触发','清理磁盘，或把运行时数据目录改到空间充足的盘（设置 → 系统集成）','APK 路径含特殊字符/中文','把 APK 移到纯英文路径再装','面向很老 Android 的应用','依赖的设备特性/厂商库不存在','与已有应用 ContentProvider 冲突','重启运行时，等开机完成后重试','把 ApkStart 加杀毒白名单后重新解压；安装微软 VC++ 2015-2022 运行库')) {
+    if ($null -eq $translations.PSObject.Properties[$key]) { throw "Manual translation missing: $key" }
+    if ($translations[$key] -notmatch '[\u0590-\u05FF]') { throw "Manual phrase has no Hebrew translation: $key" }
+    if ($null -eq @($manualAllow | Where-Object { $_ -ceq $key })[0]) { throw "Manual phrase is not allowlisted: $key" }
+}
