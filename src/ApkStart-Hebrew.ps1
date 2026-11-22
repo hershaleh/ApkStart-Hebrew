@@ -250,7 +250,22 @@ function Apply {
                 # Only the separately reviewed category labels, issue titles, hints and detail templates are eligible.
                 $fileKeys=@($autoDebugAllow | Where-Object { $translations.ContainsKey([string]$_) })
             }
-            foreach($key in $fileKeys){if($updated.Contains($key)){$count+=([regex]::Matches($updated,[regex]::Escape($key))).Count;$updated=$updated.Replace($key,$translations[$key])}}
+            foreach($key in $fileKeys){
+                if($name -eq 'autodebug.js'){
+                    # Match complete JavaScript string/template literals only; never replace substrings in comments or other messages.
+                    $tick=[string][char]96
+                    $forms=@("'"+$key+"'",'"'+$key+'"',$tick+$key+$tick)
+                    foreach($form in $forms){
+                        if($updated.Contains($form)){
+                            $count+=([regex]::Matches($updated,[regex]::Escape($form))).Count
+                            $replacement=$form.Substring(0,1)+$translations[$key]+$form.Substring($form.Length-1,1)
+                            $updated=$updated.Replace($form,$replacement)
+                        }
+                    }
+                } else {
+                    if($updated.Contains($key)){$count+=([regex]::Matches($updated,[regex]::Escape($key))).Count;$updated=$updated.Replace($key,$translations[$key])}
+                }
+            }
             if($name -in @('style.css','theme.css','shell.css','splash.css')){$updated=Rtl $updated}
             if($name -eq 'shell.css'){$updated=RtlShell $updated}
             if($updated -ne $original){
