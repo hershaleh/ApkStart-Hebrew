@@ -245,3 +245,10 @@ foreach ($key in @('完整的 Android 14 系统镜像','Google 自家内核驱�
     if ($translations[$key] -notmatch '[\u0590-\u05FF]') { throw "System diagnostics/manual phrase has no Hebrew translation: $key" }
     if ($null -eq @($manualAllow | Where-Object { $_ -ceq $key })[0]) { throw "System diagnostics/manual phrase is not allowlisted: $key" }
 }
+
+# Data-directory and feedback manual text must remain translated and explicitly allowlisted.
+foreach ($key in @('用途','位置','展开后的系统镜像','应用图标','设置与清单','Windows ↔ 安卓共享目录','「重置安卓数据」只清用户数据层，系统镜像和 APK 文件保留；更新应用不会丢运行时、已装应用和快照。  建议 C 盘保留充足空间：镜像展开 + 数据分区 + 快照合计可达数 GB。空间不足会引发Installing/开机失败。','反馈问题时请附上三样东西，能大幅加快定位：','诊断报告','app.log 最后 20 行','你的版本与形态','打印 / 存为 PDF','两个源内容一致，国内建议用 Gitee：','形态','什么时候选','全屏 / 窗口切换','旋转横竖屏','自动全屏','强制横屏/竖屏','操作','方法','按键','作用','实验室','本手册对应 v0.6.3，随版本更新。若界面文案与此处略有出入，以软件内实际显示为准。')) {
+    if ($null -eq $translations.PSObject.Properties[$key]) { throw "Data/help manual translation missing: $key" }
+    if ($translations[$key] -notmatch '[\u0590-\u05FF]') { throw "Data/help manual phrase has no Hebrew translation: $key" }
+    if ($null -eq @($manualAllow | Where-Object { $_ -ceq $key })[0]) { throw "Data/help manual phrase is not allowlisted: $key" }
+}
