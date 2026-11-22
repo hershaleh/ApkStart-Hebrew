@@ -84,3 +84,8 @@
 ## Quick start and data-directory guide
 - Expanded Hebrew coverage for the 30-second product overview, APK installation flow, per-app desktop shortcuts, native windows, file sharing, and data-directory labels.
 - Added validation for all newly reviewed manual phrases in both the translation dictionary and the dedicated allowlist.
+
+
+## Installation and first launch guide
+- Added reviewed Hebrew translations for edition selection, Store/full/portable/lightweight package descriptions, first-run runtime setup, APK installation steps, and built-in manual access.
+- Added dedicated dictionary, Hebrew-content, and allowlist assertions for this batch.
