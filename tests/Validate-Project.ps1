@@ -114,7 +114,7 @@ foreach ($required in @(
 )) {
     if (-not $source.Contains($required)) { throw "Safe reapply/restore control missing: $required" }
 }
-if ($source -match 'Copy-Item -LiteralPath \$entry\.BackupPath -Destination') { throw 'Rollback must not use non-atomic overwrite.' }
+if ($source -match 'Copy-Item -LiteralPath \$backupPath -Destination \$file') { throw 'Per-file rollback must not use non-atomic overwrite.' }
 
 # Backup/restore integrity: validate path containment, allowlisted targets, backup hashes,
 # and the patched-file hash before any restore or automatic rollback.
