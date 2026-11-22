@@ -253,7 +253,7 @@ function Apply {
             # Update document language metadata for screen readers and browser text direction.
             # Keep technical values readable through the dedicated LTR rules below.
             if($name -in @('index.html','shell.html','manual.html','splash.html')){
-                $updated=[regex]::Replace($updated,'<html\\s+lang=["'']zh-CN["'']\\s*>','<html lang="he" dir="rtl">',1)
+                $updated=[regex]::Replace($updated,'<html\s+lang=["'']zh-CN["'']\s*>','<html lang="he" dir="rtl">',1)
             }
             foreach($key in $fileKeys){
                 if($name -eq 'autodebug.js'){
