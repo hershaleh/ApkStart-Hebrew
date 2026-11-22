@@ -79,3 +79,8 @@
 ## Data directories and feedback guidance
 - Added Hebrew translations for the data-directory table, reset-data warning, diagnostic-report instructions, and manual print action.
 - Added validation that each phrase exists in the dictionary, is Hebrew, and is included in the dedicated manual allowlist.
+
+
+## Quick start and data-directory guide
+- Expanded Hebrew coverage for the 30-second product overview, APK installation flow, per-app desktop shortcuts, native windows, file sharing, and data-directory labels.
+- Added validation for all newly reviewed manual phrases in both the translation dictionary and the dedicated allowlist.
