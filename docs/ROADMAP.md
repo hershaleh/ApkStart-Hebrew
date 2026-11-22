@@ -115,3 +115,8 @@
 ## Main interface guidance and splash screen
 - Added Hebrew translations for core runtime guidance, display orientation, window modes, mouse behavior, and splash-screen setup steps.
 - Added validation that every reviewed phrase exists in the dictionary and contains Hebrew text.
+
+
+## Main interface translation audit
+- Added Hebrew for complete, previously untranslated labels and help text across performance, Android networking, update sources, diagnostics, shortcuts, data directories, and multi-app behavior.
+- Added dedicated validation for every new main-window HTML phrase; fragments split by inline HTML tags remain excluded to avoid damaging markup.
