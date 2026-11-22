@@ -329,9 +329,10 @@ $uiGuidance = @(
 foreach ($key in $uiGuidance) {
     $normalizedKey = [regex]::Replace([string]$key, '\s+', ' ').Trim()
     $matchedKey = $null
-    foreach ($candidate in $translations.Keys) {
-        if ([regex]::Replace([string]$candidate, '\s+', ' ').Trim() -ceq $normalizedKey) {
-            $matchedKey = [string]$candidate
+    foreach ($candidateProperty in $translations.PSObject.Properties) {
+        $candidate = [string]$candidateProperty.Name
+        if ([regex]::Replace($candidate, '\s+', ' ').Trim() -ceq $normalizedKey) {
+            $matchedKey = $candidate
             break
         }
     }
