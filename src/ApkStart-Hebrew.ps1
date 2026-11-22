@@ -56,10 +56,14 @@ function Test-PathWithin([string]$candidate,[string]$base) {
 }
 function Get-SafeRelativePath([string]$relative) {
     if([string]::IsNullOrWhiteSpace($relative) -or [IO.Path]::IsPathRooted($relative)){throw 'נתיב יחסי בגיבוי אינו תקין.'}
-    $normalized=$relative.Replace('/','\\')
-    $parts=$normalized.Split('\\')
+    $normalized=$relative.Replace('/',[string][char]92)
+    $parts=$normalized.Split([char]92)
     if(@($parts | Where-Object { $_ -eq '..' -or $_ -eq '.' -or $_ -eq '' }).Count -gt 0){throw 'נתיב הגיבוי מכיל רכיב אסור.'}
-    if(-not ($normalized -match '^src\\ui\\(main\.js|index\.html|app\.js|shell\.html|shell\.js|manual\.html|splash\.html|splash\.js|style\.css|theme\.css|shell\.css|splash\.css)function Scan {
+    $allowedUi='^src\\ui\\(main\.js|index\.html|app\.js|shell\.html|shell\.js|manual\.html|splash\.html|splash\.js|style\.css|theme\.css|shell\.css|splash\.css)$'
+    if(-not ($normalized -match $allowedUi -or $normalized -ceq 'src\core\autodebug.js')){throw 'הגיבוי מפנה לקובץ שאינו חלק מרשימת קובצי הממשק המותרים.'}
+    return $normalized
+}
+function Scan {
     $target=Resolve-Target $pathBox.Text
     $script:Target=$target
     if(!$target){Log 'בחר תיקיית ApkStart.' 'warning';return $null}
