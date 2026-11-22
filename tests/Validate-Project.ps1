@@ -69,6 +69,21 @@ foreach ($required in @('Get-FileHash','APKSTART-HEBREW:RTL','app.asar','Windows
     }
 }
 
+# Restore must be explicitly bound to the installation recorded in the backup,
+# and the user must see the exact target/version/file count before files are restored.
+foreach ($required in @(
+    '$selected=Resolve-Target $pathBox.Text',
+    'בחר תחילה את תיקיית ApkStart שעבורה נוצר הגיבוי',
+    'הגיבוי האחרון שייך להתקנה אחרת',
+    'OrdinalIgnoreCase',
+    'אישור שחזור',
+    'גרסה בעת הגיבוי:',
+    'מספר קבצים:',
+    'Update-ActionState'
+)) {
+    if (-not $source.Contains($required)) { throw "Restore target confirmation safeguard missing: $required" }
+}
+
 # User-facing action gating: apply is disabled until a supported scan,
 # changing the path invalidates the previous scan, and restore follows backup availability.
 foreach ($required in @(
