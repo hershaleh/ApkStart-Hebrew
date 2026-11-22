@@ -82,6 +82,9 @@ foreach ($required in @(
     'Test-PathWithin $backupPath $backupFiles',
     '(HashFile $backupPath) -ne [string]$entry.BackupHash',
     '(HashFile $dest) -ne [string]$entry.PatchedHash',
+    'src/ui/index.html',
+    'src/ui/app.js',
+    'זהו גיבוי ישן ללא טביעת אצבע לגיבוי',
     'src\core\autodebug.js',
     'apkstart-hebrew-restore.tmp',
     'APKSTART-HEBREW'
