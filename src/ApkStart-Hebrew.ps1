@@ -512,7 +512,7 @@ function Restore {
         $selected=Resolve-Target $pathBox.Text
         if(!$selected -or $selected.Status -in @('InvalidPath','Unknown','MSIX','ASAR')){throw 'בחר תחילה את תיקיית ApkStart שעבורה נוצר הגיבוי, ולחץ על סריקה.'}
         if(-not [string]::Equals((Get-FullPath $selected.Root).TrimEnd('\\'),$targetRoot.TrimEnd('\\'),[StringComparison]::OrdinalIgnoreCase)){
-            throw ('הגיבוי האחרון שייך להתקנה אחרת: '+$targetRoot+'. בחר את ההתקנה הנכונה ולחץ על שחזור מחדש.')
+            throw ('הגיבוי שנבחר שייך להתקנה אחרת: '+$targetRoot+'. בחר את ההתקנה הנכונה ולחץ על שחזור מחדש.')
         }
         $backupRoot=Get-FullPath (Split-Path -Parent $manifestPath)
         if(-not (Test-PathWithin $backupRoot $backupsRoot) -or (Join-Path $backupRoot 'manifest.json') -cne $manifestPath){throw 'תיקיית הגיבוי אינה תקינה.'}
