@@ -298,3 +298,35 @@ foreach ($key in @('设置 → 显示与窗口 → 自动全屏（配合"强制�
     if ($translations[$key] -notmatch '[\u0590-\u05FF]') { throw "Manual phrase has no Hebrew translation: $key" }
     if ($null -eq @($manualAllow | Where-Object { $_ -ceq $key })[0]) { throw "Manual phrase is not allowlisted: $key" }
 }
+
+
+# Main UI guidance and splash-screen translations added in batch 153.
+$uiGuidance = @(
+    '虚拟机窗口已打开。按下面 6 步操作一次，之后 ApkStart 会直接从磁盘启动，不再需要镜像。',
+    '内存、核心数、渲染后端、端口、加速方式全部自动选择；启动失败会自动降级重试，不需要手动改。
+            ApkStart 用',
+    '系统镜像全机共享一份，应用数据用差分层保存；旧镜像、旧快照、日志和锁文件都可回收。日志超过上限会自动滚动，不会无限增长。「重置安卓数据」会真实删除数 GB 用户数据，仅保留系统本身。',
+    '或右键托盘切换；全屏只放大窗口，不改变画面比例，切换不重启应用。',
+    '打开后，每次点开应用直接铺满屏幕，不用再按 F11。配合下面的「横屏」使用效果最好
+            —— 横屏面板的宽高比本来就贴合屏幕，全屏不会留黑边。',
+    '安卓的横竖屏是',
+    '虚拟手机面板的真实方向',
+    '决定的。面板方向和应用自己声明的方向不一致时，
+            安卓只会给应用中间一条窄画面、两侧补黑 —— 换窗口大小、改分辨率都填不满。
+            「跟随应用」会在安装 APK 时读出应用的方向，启动时自动把面板换成一致的那个，
+            所以红果、墨读这类应用会正立且铺满。方向不对时才重启一次运行时（约十几秒），
+            之后再打开同一方向的应用都是秒进。',
+    '原生窗口由模拟器直接渲染和排布，拖拽、缩放、旋转都跟手，不会出现黑边或点击错位，
+            代价是多一个任务栏图标（横屏用托盘菜单或 Ctrl+Alt+R）。嵌入模式会把模拟器窗口塞进我们的窗口，
+            观感更统一、自带旋转按钮，但在缩放/旋转/切换应用时容易掉帧并出现黑边。改动在下次打开应用时生效。',
+    '模拟器原生把左键当成手指点击，按住拖动就是滑动，无需额外设置。',
+    '模拟器默认把右键也当成一次点击（容易误触）。开启后右键只执行返回，不再触发点击。',
+    '<li>运行时组件已随安装包内置，不再下载任何东西</li>',
+    '<li>把系统镜像展开到用户目录（约 1 分钟，只需一次）</li>',
+    '<li>准备硬件加速与中文输入法</li>',
+    '<li>完成后双击 APK 或桌面图标即可秒开应用</li>'
+)
+foreach ($key in $uiGuidance) {
+    if ($null -eq $translations.PSObject.Properties[$key]) { throw "Main UI translation missing: $key" }
+    if ($translations[$key] -notmatch '[\u0590-\u05FF]') { throw "Main UI phrase has no Hebrew translation: $key" }
+}
