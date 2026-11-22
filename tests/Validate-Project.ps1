@@ -372,6 +372,9 @@ if (-not $scriptSource.Contains("index.html','shell.html','manual.html','splash.
 if (-not $scriptSource.Contains('<html lang="he" dir="rtl">')) { throw 'Hebrew HTML language/direction metadata is missing.' }
 if (-not $scriptSource.Contains('[regex]::Replace')) { throw 'HTML metadata replacement must be explicit and bounded.' }
 
+$languagePattern = '<html\s+lang=["'']zh-CN["'']\s*>'
+if (-not [regex]::IsMatch('<html lang="zh-CN">', $languagePattern)) { throw 'HTML language metadata pattern does not match the upstream document.' }
+
 # Main UI guidance and splash-screen translations added in batch 153.
 $uiGuidance = @(
     '虚拟机窗口已打开。按下面 6 步操作一次，之后 ApkStart 会直接从磁盘启动，不再需要镜像。',
