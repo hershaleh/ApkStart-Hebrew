@@ -208,10 +208,124 @@ function Select-BackupManifest {
     return $null
 }
 
+
+function Select-BackupForExport {
+    $history=@(Get-BackupHistory)
+    if($history.Count -eq 0){[Windows.Forms.MessageBox]::Show('לא נמצאו גיבויים תקינים לייצוא.','ייצוא גיבוי') | Out-Null;return $null}
+    $dialog=New-Object Windows.Forms.Form
+    $dialog.Text='בחירת גיבוי לייצוא';$dialog.Size=New-Object Drawing.Size(820,350);$dialog.MinimumSize=New-Object Drawing.Size(700,290)
+    $dialog.StartPosition='CenterParent';$dialog.RightToLeft='Yes';$dialog.RightToLeftLayout=$true
+    $label=New-Object Windows.Forms.Label;$label.Text='בחר גיבוי תקין ליצירת קובץ ZIP:';$label.AutoSize=$true;$label.Location=New-Object Drawing.Point(16,14);$dialog.Controls.Add($label)
+    $list=New-Object Windows.Forms.ListBox;$list.Location=New-Object Drawing.Point(16,42);$list.Size=New-Object Drawing.Size(770,205);$list.Anchor='Top,Bottom,Left,Right';$list.HorizontalScrollbar=$true
+    foreach($item in $history){[void]$list.Items.Add($item.Display)}
+    $list.SelectedIndex=0;$dialog.Controls.Add($list)
+    $ok=New-Object Windows.Forms.Button;$ok.Text='ייצא גיבוי נבחר';$ok.DialogResult=[Windows.Forms.DialogResult]::OK;$ok.Location=New-Object Drawing.Point(545,265);$ok.Size=New-Object Drawing.Size(130,30);$ok.Anchor='Bottom,Right';$dialog.Controls.Add($ok)
+    $cancel=New-Object Windows.Forms.Button;$cancel.Text='ביטול';$cancel.DialogResult=[Windows.Forms.DialogResult]::Cancel;$cancel.Location=New-Object Drawing.Point(690,265);$cancel.Size=New-Object Drawing.Size(95,30);$cancel.Anchor='Bottom,Right';$dialog.Controls.Add($cancel)
+    $dialog.AcceptButton=$ok;$dialog.CancelButton=$cancel
+    if($dialog.ShowDialog($form) -eq [Windows.Forms.DialogResult]::OK -and $list.SelectedIndex -ge 0){return [string]$history[$list.SelectedIndex].ManifestPath}
+    return $null
+}
+function Export-BackupZip {
+    $manifestPath=Select-BackupForExport
+    if([string]::IsNullOrWhiteSpace($manifestPath)){return}
+    $history=@(Get-BackupHistory | Where-Object {$_.ManifestPath -eq $manifestPath})
+    if($history.Count -ne 1){throw 'הגיבוי אינו מופיע עוד בהיסטוריה התקינה. בצע רענון ונסה שוב.'}
+    $backupRoot=Split-Path -Parent $manifestPath
+    $dialog=New-Object Windows.Forms.SaveFileDialog
+    $dialog.Title='שמירת גיבוי ApkStart';$dialog.Filter='קובץ גיבוי ZIP (*.zip)|*.zip';$dialog.DefaultExt='zip';$dialog.AddExtension=$true
+    $dialog.FileName=('ApkStart-Hebrew-backup-'+(Get-Date -Format 'yyyyMMdd-HHmmss')+'.zip')
+    if($dialog.ShowDialog($form) -ne [Windows.Forms.DialogResult]::OK){return}
+    $destination=$dialog.FileName
+    $temp=$destination+'.tmp-'+[guid]::NewGuid().ToString('N')
+    Add-Type -AssemblyName System.IO.Compression
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    try{
+        $archive=[IO.Compression.ZipFile]::Open($temp,[IO.Compression.ZipArchiveMode]::Create)
+        try{
+            $manifestEntry=$archive.CreateEntry('manifest.json',[IO.Compression.CompressionLevel]::Optimal)
+            $sourceManifest=[IO.File]::OpenRead($manifestPath)
+            try{$out=$manifestEntry.Open();try{$sourceManifest.CopyTo($out)}finally{$out.Dispose()}}finally{$sourceManifest.Dispose()}
+            $backupFiles=Join-Path $backupRoot 'files'
+            foreach($entry in (Get-Content -LiteralPath $manifestPath -Raw -Encoding UTF8 | ConvertFrom-Json).Files){
+                $relative=Get-SafeRelativePath ([string]$entry.RelativePath)
+                $source=Join-Path $backupFiles $relative
+                if(-not (Test-PathWithin $source $backupFiles) -or -not (Test-Path -LiteralPath $source -PathType Leaf)){throw ('קובץ גיבוי חסר: '+$relative)}
+                if(-not [string]::IsNullOrWhiteSpace([string]$entry.BackupHash) -and (HashFile $source) -ne [string]$entry.BackupHash){throw ('טביעת קובץ הגיבוי אינה תואמת: '+$relative)}
+                $zipName='files/'+$relative.Replace('\','/')
+                $zipEntry=$archive.CreateEntry($zipName,[IO.Compression.CompressionLevel]::Optimal)
+                $input=[IO.File]::OpenRead($source)
+                try{$output=$zipEntry.Open();try{$input.CopyTo($output)}finally{$output.Dispose()}}finally{$input.Dispose()}
+            }
+        }finally{$archive.Dispose()}
+        if((Get-Item -LiteralPath $temp).Length -gt 500MB){throw 'קובץ ה-ZIP שנוצר חורג ממגבלת הגודל של 500MB.'}
+        if(Test-Path -LiteralPath $destination){throw 'קובץ היעד כבר קיים. בחר שם אחר כדי לא לדרוס קובץ קיים.'}
+        [IO.File]::Move($temp,$destination)
+        Log ('הגיבוי יוצא לקובץ ZIP: '+$destination) 'success'
+        [Windows.Forms.MessageBox]::Show('ייצוא הגיבוי הסתיים בהצלחה. קובצי ApkStart ונתוני המשתמש לא נכללו.','ייצוא הסתיים') | Out-Null
+    }catch{if(Test-Path -LiteralPath $temp){Remove-Item -LiteralPath $temp -Force -ErrorAction SilentlyContinue};throw}
+}
+function Import-BackupZip {
+    $dialog=New-Object Windows.Forms.OpenFileDialog
+    $dialog.Title='בחירת קובץ גיבוי לייבוא';$dialog.Filter='קובצי גיבוי ZIP (*.zip)|*.zip';$dialog.CheckFileExists=$true; $dialog.Multiselect=$false
+    if($dialog.ShowDialog($form) -ne [Windows.Forms.DialogResult]::OK){return}
+    $archivePath=$dialog.FileName
+    $backupsRoot=Join-Path $stateDir 'Backups'
+    New-Item -ItemType Directory -Path $backupsRoot -Force | Out-Null
+    $stage=Join-Path $backupsRoot ('.import-'+[guid]::NewGuid().ToString('N'))
+    Add-Type -AssemblyName System.IO.Compression
+    try{
+        $info=Get-Item -LiteralPath $archivePath
+        if($info.Length -le 0 -or $info.Length -gt 500MB){throw 'גודל קובץ ZIP אינו תקין או חורג ממגבלת 500MB.'}
+        $archive=[IO.Compression.ZipFile]::OpenRead($archivePath)
+        try{
+            if($archive.Entries.Count -lt 2 -or $archive.Entries.Count -gt 2001){throw 'מספר הפריטים בארכיון אינו תקין (מותר manifest ועד 2,000 קבצים).'}
+            $seen=@{};$total=[long]0;$manifestSeen=$false
+            foreach($entry in $archive.Entries){
+                $name=[string]$entry.FullName
+                if([string]::IsNullOrWhiteSpace($name) -or $name.Contains('\') -or $name.StartsWith('/') -or $name -match '^[A-Za-z]:' -or $name.Split('/').Contains('..') -or $name.Split('/').Contains('.')){throw ('נתיב לא בטוח בתוך ZIP: '+$name)}
+                if($name.EndsWith('/')){throw 'הארכיון מכיל תיקיות מפורשות שאינן נחוצות.'}
+                if($seen.ContainsKey($name.ToLowerInvariant())){throw ('הארכיון מכיל נתיב כפול: '+$name)}
+                $seen[$name.ToLowerInvariant()]=$true
+                $unixType=($entry.ExternalAttributes -shr 16) -band 0xF000
+                if($unixType -eq 0xA000 -or ($unixType -ne 0 -and $unixType -ne 0x8000)){throw ('קובץ מסוג קישור או סוג קובץ לא נתמך: '+$name)}
+                if($name -ceq 'manifest.json'){$manifestSeen=$true;if($entry.Length -gt 2MB){throw 'קובץ manifest גדול באופן חריג.'}}
+                elseif($name.StartsWith('files/')){[void](Get-SafeRelativePath ($name.Substring(6)))}
+                else{throw ('הארכיון מכיל פריט שאינו חלק מגיבוי: '+$name)}
+                $total += [long]$entry.Length
+                if($total -gt 1GB){throw 'הגיבוי המכווץ גדול מדי לאחר פתיחה (מגבלה 1GB).'}
+            }
+            if(-not $manifestSeen){throw 'קובץ manifest.json חסר בארכיון.'}
+            New-Item -ItemType Directory -Path $stage -Force | Out-Null
+            foreach($entry in $archive.Entries){
+                $relative=$entry.FullName
+                if($relative -ceq 'manifest.json'){$destination=Join-Path $stage 'manifest.json'}
+                else{$safe=Get-SafeRelativePath ($relative.Substring(6));$destination=Join-Path (Join-Path $stage 'files') $safe}
+                if(-not (Test-PathWithin $destination $stage)){throw 'נתיב חילוץ חורג מתיקיית הייבוא.'}
+                New-Item -ItemType Directory -Path (Split-Path -Parent $destination) -Force | Out-Null
+                $input=$entry.Open()
+                try{$output=[IO.File]::Open($destination,[IO.FileMode]::CreateNew,[IO.FileAccess]::Write,[IO.FileShare]::None);try{$input.CopyTo($output)}finally{$output.Dispose()}}finally{$input.Dispose()}
+            }
+        }finally{$archive.Dispose()}
+        $valid=@(Get-BackupHistory | Where-Object {$_.ManifestPath -eq (Join-Path $stage 'manifest.json')})
+        if($valid.Count -ne 1){throw 'הגיבוי שיובא אינו תקין, חסרים בו קבצים, טביעות SHA-256 אינן תואמות, או שההתקנה המקורית אינה זמינה במחשב זה.'}
+        $stamp=Get-Date -Format 'yyyyMMdd-HHmmss-fff'
+        $final=Join-Path $backupsRoot ('Imported-'+$stamp)
+        while(Test-Path -LiteralPath $final){$final=Join-Path $backupsRoot ('Imported-'+[guid]::NewGuid().ToString('N'))}
+        [IO.Directory]::Move($stage,$final)
+        Log ('הגיבוי יובא ונוסף להיסטוריה: '+$final) 'success'
+        [Windows.Forms.MessageBox]::Show('הייבוא הסתיים. הגיבוי נוסף להיסטוריה ולא החליף גיבויים קיימים. לשחזור יש לבחור את אותה התקנת ApkStart שעבורה נוצר הגיבוי.','ייבוא הסתיים') | Out-Null
+        Update-ActionState
+    }catch{
+        if(Test-Path -LiteralPath $stage){Remove-Item -LiteralPath $stage -Recurse -Force -ErrorAction SilentlyContinue}
+        throw
+    }
+}
+
 function Update-ActionState {
     $isSupported=($null -ne $script:Target -and $script:Target.Status -eq 'Supported')
     if($apply){$apply.Enabled=$isSupported}
-    if($restore){$restore.Enabled=(@(Get-BackupHistory).Count -gt 0)}
+    if($restore){$restore.Enabled=(@(Get-BackupHistory).Count -gt 0)
+    if($exportBackup){$exportBackup.Enabled=(@(Get-BackupHistory).Count -gt 0)}}
 }
 function Scan {
     $target=Resolve-Target $pathBox.Text
@@ -614,6 +728,8 @@ $versionLabel=New-Object Windows.Forms.Label;$versionLabel.Text='גרסה: —';
 $scan=New-Object Windows.Forms.Button;$scan.Text='סריקה';$scan.Location=New-Object Drawing.Point(22,140);$scan.Size=New-Object Drawing.Size(100,36);$main.Controls.Add($scan)
 $apply=New-Object Windows.Forms.Button;$apply.Text='החלת עברית';$apply.Enabled=$false;$apply.Location=New-Object Drawing.Point(132,140);$apply.Size=New-Object Drawing.Size(130,36);$apply.BackColor=[Drawing.Color]::FromArgb(16,130,91);$apply.ForeColor=[Drawing.Color]::White;$apply.FlatStyle='Flat';$main.Controls.Add($apply)
 $restore=New-Object Windows.Forms.Button;$restore.Text='היסטוריית גיבויים…';$restore.Enabled=(@(Get-BackupHistory).Count -gt 0);$restore.Location=New-Object Drawing.Point(272,140);$restore.Size=New-Object Drawing.Size(150,36);$main.Controls.Add($restore)
+$exportBackup=New-Object Windows.Forms.Button;$exportBackup.Text='ייצוא ZIP…';$exportBackup.Enabled=(@(Get-BackupHistory).Count -gt 0);$exportBackup.Location=New-Object Drawing.Point(432,140);$exportBackup.Size=New-Object Drawing.Size(105,36);$main.Controls.Add($exportBackup)
+$importBackup=New-Object Windows.Forms.Button;$importBackup.Text='ייבוא ZIP…';$importBackup.Location=New-Object Drawing.Point(547,140);$importBackup.Size=New-Object Drawing.Size(105,36);$main.Controls.Add($importBackup)
 $note=New-Object Windows.Forms.Label;$note.Text='התרגום עדיין חלקי. MSIX ו-app.asar מזוהים אך אינם משתנים בשלב זה.';$note.AutoSize=$false;$note.Size=New-Object Drawing.Size(750,32);$note.Location=New-Object Drawing.Point(22,190);$note.ForeColor=[Drawing.Color]::DarkGoldenrod;$main.Controls.Add($note)
 $logTitle=New-Object Windows.Forms.Label;$logTitle.Text='יומן פעולות';$logTitle.AutoSize=$true;$logTitle.Location=New-Object Drawing.Point(22,226);$main.Controls.Add($logTitle)
 $logBox=New-Object Windows.Forms.RichTextBox;$logBox.Location=New-Object Drawing.Point(22,251);$logBox.Size=New-Object Drawing.Size(756,290);$logBox.Anchor='Top,Bottom,Left,Right';$logBox.ReadOnly=$true;$logBox.BackColor=[Drawing.Color]::White;$logBox.Font=New-Object Drawing.Font('Consolas',9);$logBox.RightToLeft='Yes';$main.Controls.Add($logBox)
@@ -621,5 +737,7 @@ $browse.Add_Click({$d=New-Object Windows.Forms.FolderBrowserDialog;$d.Descriptio
 $detect.Add_Click({$found=@(Detect-Targets | Where-Object { (Resolve-Target $_).Status -in @('Supported','UnsupportedVersion','UnsupportedStructure','ASAR') });if($found.Count -eq 0){Log 'לא נמצאה התקנה מזוהה. בחר תיקייה ידנית.' 'warning';return};$chosen=Select-DetectedInstall $found;if($chosen){$pathBox.Text=$chosen;Scan | Out-Null}})
 $pathBox.Add_TextChanged({$script:Target=$null;$statusLabel.Text='הנתיב השתנה — יש לבצע סריקה מחדש';$statusLabel.ForeColor=[Drawing.Color]::DarkGoldenrod;Update-ActionState})
 $scan.Add_Click({Scan | Out-Null});$apply.Add_Click({Apply});$restore.Add_Click({Restore})
+$exportBackup.Add_Click({try{Export-BackupZip}catch{Log ('ייצוא נכשל: '+$_.Exception.Message) 'error';[Windows.Forms.MessageBox]::Show($_.Exception.Message,'ייצוא נכשל') | Out-Null};Update-ActionState})
+$importBackup.Add_Click({try{Import-BackupZip}catch{Log ('ייבוא נכשל: '+$_.Exception.Message) 'error';[Windows.Forms.MessageBox]::Show($_.Exception.Message,'ייבוא נכשל') | Out-Null};Update-ActionState})
 $form.Add_Shown({Update-ActionState;Log 'ברוך הבא. בחר התקנה ובצע סריקה. כפתור ההחלה יופעל רק להתקנה תואמת.';$found=@(Detect-Targets | Where-Object { (Resolve-Target $_).Status -in @('Supported','UnsupportedVersion','UnsupportedStructure','ASAR') });if($found.Count -gt 0){$chosen=Select-DetectedInstall $found;if($chosen){$pathBox.Text=$chosen;Scan | Out-Null}}})
 [void]$form.ShowDialog()
