@@ -82,6 +82,18 @@ function Detect-Targets {
     return @($list | Select-Object -Unique)
 }
 function HashFile([string]$path){ return (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash }
+function Restore-FileAtomic([string]$source,[string]$destination) {
+    if(-not (Test-Path -LiteralPath $source -PathType Leaf)){throw 'קובץ המקור לשחזור חסר.'}
+    if(-not (Test-Path -LiteralPath $destination -PathType Leaf)){throw 'קובץ היעד לשחזור חסר.'}
+    $temp=$destination+'.apkstart-hebrew-restore.tmp'
+    try {
+        [IO.File]::Copy($source,$temp,$true)
+        [IO.File]::Replace($temp,$destination,$null,$true)
+    } finally {
+        if(Test-Path -LiteralPath $temp){Remove-Item -LiteralPath $temp -Force -ErrorAction SilentlyContinue}
+    }
+}
+
 function Get-FullPath([string]$path) {
     return [IO.Path]::GetFullPath($path).TrimEnd([IO.Path]::DirectorySeparatorChar,[IO.Path]::AltDirectorySeparatorChar)
 }
@@ -372,7 +384,7 @@ function Apply {
         [Windows.Forms.MessageBox]::Show('החלת התרגום הסתיימה. פתח את ApkStart ובדוק את הממשק.','הסתיים') | Out-Null
     } catch {
         Log ('החלה נכשלה: '+$_.Exception.Message) 'error'
-        foreach($entry in $manifest.Files){try{$rollbackDest=Join-Path $target.Root (Get-SafeRelativePath ([string]$entry.RelativePath));if((Test-Path -LiteralPath $rollbackDest -PathType Leaf) -and (HashFile $rollbackDest) -eq [string]$entry.PatchedHash -and (Test-Path -LiteralPath $entry.BackupPath -PathType Leaf) -and (HashFile $entry.BackupPath) -eq [string]$entry.BackupHash){Copy-Item -LiteralPath $entry.BackupPath -Destination $rollbackDest -Force}}catch{Log ('לא ניתן היה להשלים שחזור אוטומטי של קובץ: '+$entry.RelativePath) 'error'}}
+        foreach($entry in $manifest.Files){try{$rollbackDest=Join-Path $target.Root (Get-SafeRelativePath ([string]$entry.RelativePath));if((Test-Path -LiteralPath $rollbackDest -PathType Leaf) -and (HashFile $rollbackDest) -eq [string]$entry.PatchedHash -and (Test-Path -LiteralPath $entry.BackupPath -PathType Leaf) -and (HashFile $entry.BackupPath) -eq [string]$entry.BackupHash){Restore-FileAtomic $entry.BackupPath $rollbackDest}}catch{Log ('לא ניתן היה להשלים שחזור אוטומטי של קובץ: '+$entry.RelativePath) 'error'}}
     }
 }
 function Restore {
@@ -392,6 +404,13 @@ function Restore {
         $backupRoot=Get-FullPath (Split-Path -Parent $manifestPath)
         if(-not (Test-PathWithin $backupRoot $backupsRoot) -or (Join-Path $backupRoot 'manifest.json') -cne $manifestPath){throw 'תיקיית הגיבוי אינה תקינה.'}
         $backupFiles=Join-Path $backupRoot 'files'
+        $seenPaths=@{}
+        foreach($entry in $m.Files){
+            $relative=Get-SafeRelativePath ([string]$entry.RelativePath)
+            $duplicateKey=$relative.ToLowerInvariant()
+            if($seenPaths.ContainsKey($duplicateKey)){throw ('המניפסט מכיל קובץ כפול: '+$relative)}
+            $seenPaths[$duplicateKey]=$true
+        }
         $ok=0;$skip=0
         foreach($entry in $m.Files){
             $relative=Get-SafeRelativePath ([string]$entry.RelativePath)
@@ -402,12 +421,8 @@ function Restore {
             if(-not [string]::IsNullOrWhiteSpace([string]$entry.BackupHash) -and (HashFile $backupPath) -ne [string]$entry.BackupHash){Log ('דילוג: קובץ הגיבוי חסר או שונה: '+$relative) 'warning';$skip++;continue}
             if([string]::IsNullOrWhiteSpace([string]$entry.BackupHash)){Log ('אזהרה: זהו גיבוי ישן ללא טביעת אצבע לגיבוי; נבדקה טביעת האצבע של הקובץ המתורגם בלבד: '+$relative) 'warning'}
             if((HashFile $dest) -ne [string]$entry.PatchedHash){Log ('דילוג: הקובץ השתנה מאז ההחלה: '+$relative) 'warning';$skip++;continue}
-            $tempPath=$dest+'.apkstart-hebrew-restore.tmp'
-            try{
-                [IO.File]::Copy($backupPath,$tempPath,$true)
-                [IO.File]::Replace($tempPath,$dest,$null,$true)
-                $ok++
-            }finally{if(Test-Path -LiteralPath $tempPath){Remove-Item -LiteralPath $tempPath -Force -ErrorAction SilentlyContinue}}
+            Restore-FileAtomic $backupPath $dest
+            $ok++
         }
         Log ("שוחזרו "+$ok+" קבצים; דולגו "+$skip+".") 'success'
         if($skip -eq 0){Remove-Item -LiteralPath $stateFile -Force}
