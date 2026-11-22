@@ -220,7 +220,7 @@ foreach ($required in @(
     '(HashFile $dest) -ne [string]$entry.PatchedHash',
     'src/ui/index.html',
     'src/ui/app.js',
-    'זהו גיבוי ישן ללא טביעת אצבע לגיבוי',
+    'מוכן לשחזור (גיבוי ישן)',
     'src\core\autodebug.js',
     'apkstart-hebrew-restore.tmp',
     'APKSTART-HEBREW'
